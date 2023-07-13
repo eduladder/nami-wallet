@@ -1,0 +1,48 @@
+plugins {
+    id "de.undercouch.download" version "3.4.3"
+}
+
+allprojects {
+    repositories {
+        maven {
+            url "https://plugins.gradle.org/m2/"
+        }
+        jcenter()
+        mavenCentral()
+    }
+}
+
+subprojects {
+    apply plugin: 'idea'
+    version = '0.1'
+}
+
+task downloadMatJar(type: Download) {
+    src 'https://raw.githubusercontent.com/wiki/eclipse/jifa/resources/mat.jar'
+    dest "${project.rootDir}/mat.jar"
+    overwrite false
+}
+
+task copyWorkerDist(type: Copy, dependsOn: ':backend:worker:build') {
+    from zipTree("${rootProject.rootDir}/build/distributions/heaphub-0.1.zip") as Object
+    into "${rootProject.rootDir}/artifacts" as Object
+}
+
+task deleteBuild {
+	doFirst {
+    	delete files("${projectDir}/build")
+    	delete files("${projectDir}/bin")
+    }
+}
+
+task clean {
+    doFirst {
+        delete files("${projectDir}/artifacts")
+    }
+}
+
+task build {
+  dependsOn downloadMatJar, copyWorkerDist, deleteBuild
+}
+
+defaultTasks 'build'
