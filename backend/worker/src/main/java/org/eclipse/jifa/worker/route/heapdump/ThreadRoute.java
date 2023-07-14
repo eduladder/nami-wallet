@@ -71,7 +71,8 @@ class ThreadRoute extends HeapBaseRoute {
         query.snapshot = Analyzer.getOrOpenSnapshotContext(file).getSnapshot();
         IResultTree result = (IResultTree) query.execute(HeapDumpSupport.VOID_LISTENER);
         List<?> elements = result.getElements();
-
+        //sort by retained Size
+        elements.sort((e1, e2) -> (((Bytes) result.getColumnValue(e1, 4)).getValue() - ((Bytes) result.getColumnValue(e2, 5)).getValue()) > 0 ? 1 : -1);
 
         future.complete(PageViewBuilder.build(elements, paging, e -> new Info(result.getContext(e).getObjectId(),
                                                                               (String) result.getColumnValue(e, 0),

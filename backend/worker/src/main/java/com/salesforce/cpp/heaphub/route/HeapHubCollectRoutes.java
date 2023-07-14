@@ -1,6 +1,7 @@
 package com.salesforce.cpp.heaphub.route;
 
 import java.io.IOException;
+import java.lang.management.ThreadInfo;
 import java.net.URI;
 import java.net.URISyntaxException;
 import java.util.ArrayList;
@@ -13,10 +14,9 @@ import org.eclipse.jifa.worker.Global;
 import org.eclipse.jifa.worker.route.ParamKey;
 import org.eclipse.jifa.worker.route.RouteMeta;
 import org.eclipse.jifa.worker.vo.heapdump.dominatortree.BaseRecord;
-import org.json.JSONObject;
+import org.eclipse.jifa.worker.vo.heapdump.histogram.Record;
 
 import com.fasterxml.jackson.databind.JsonNode;
-import com.google.common.base.Enums;
 import com.salesforce.cpp.heaphub.util.Response;
 
 import org.eclipse.jifa.worker.Constant;
@@ -89,6 +89,221 @@ public class HeapHubCollectRoutes extends HeapHubBaseRoute{
         }
     }
 
+    class ClassHistoInfo {
+        private String memLocation;
+        private String label;
+        private long numberOfObjects;
+        private long shallowSize;
+        private long retainedSize;
+        private int objectId;
+        private int type;
+
+        public ClassHistoInfo(JsonObject obj) {
+            String label = obj.getString(Constant.Histogram.LABEL_KEY);
+            String[] splitLabel = label.split("@ ");
+            if (splitLabel.length != 2) {
+                throw new IllegalArgumentException("Invalid label: " + label);
+            }
+            this.label = splitLabel[0];
+            this.memLocation = splitLabel[1];
+            this.numberOfObjects = obj.getLong(Constant.Histogram.NUM_OBJECTS_KEY);
+            this.shallowSize = obj.getLong(Constant.Histogram.SHALLOW_SIZE_KEY);
+            this.retainedSize = obj.getLong(Constant.Histogram.RETAINED_SIZE_KEY);
+            this.objectId = obj.getInteger(Constant.Histogram.OBJECT_ID_KEY);
+            this.type = obj.getInteger(Constant.Histogram.TYPE_KEY);
+        }
+
+        public String getMemLocation() {
+            return memLocation;
+        }
+
+        public String getLabel() {
+            return label;
+        }
+        public long getNumberOfObjects() {
+            return numberOfObjects;
+        }
+        public long getShallowSize() {
+            return shallowSize;
+        }
+        public long getRetainedSize() {
+            return retainedSize;
+        }
+        public int getObjectId() {
+            return objectId;
+        }
+        public int getType() {
+            return type;
+        }
+
+        public String toCSV() {
+            return String.format("%s,%s,%s,%s,%s,%s,%s\n",
+            this.getLabel(), this.getMemLocation(), this.getObjectId(), this.getRetainedSize(), this.getShallowSize(), this.getNumberOfObjects(), this.getType());
+        }
+
+    }
+
+    class ThreadInfo {
+        private int objectId;
+
+        private String object;
+    
+        private String name;
+    
+        private long shallowSize;
+    
+        private long retainedSize;
+    
+        private String contextClassLoader;
+    
+        private boolean hasStack;
+    
+        private boolean daemon;
+
+        public ThreadInfo(JsonObject obj) {
+            this.objectId = obj.getInteger(Constant.Threads.OBJECT_ID_KEY);
+            this.object = obj.getString(Constant.Threads.OBJECT_KEY);
+            this.name = obj.getString(Constant.Threads.NAME_KEY);
+            this.shallowSize = obj.getLong(Constant.Threads.SHALLOW_SIZE_KEY);
+            this.retainedSize = obj.getLong(Constant.Threads.RETAINED_SIZE_KEY);
+            this.contextClassLoader = obj.getString(Constant.Threads.CONTEXT_CLASS_LOADER_KEY);
+            this.hasStack = obj.getBoolean(Constant.Threads.HAS_STACK_KEY);
+            this.daemon = obj.getBoolean(Constant.Threads.DAEMON_KEY);
+        }
+
+        public int getObjectId() {
+            return objectId;
+        }
+
+        public String getObject() {
+            return object;
+        }
+        public String getName() {
+            return name;
+        }
+        public long getShallowSize() {
+            return shallowSize;
+        }
+        public long getRetainedSize() {
+            return retainedSize;
+        }
+        public String getContextClassLoader() {
+            return contextClassLoader;
+        }
+        public boolean hasStack() {
+            return hasStack;
+        }
+        public boolean isDaemon() {
+            return daemon;
+        }
+        public String toCSV() {
+            return String.format("%s,%s,%s,%s,%s,%s,%s,%s\n",
+            this.getObjectId(), this.getObject(), this.getName(), this.getShallowSize(), this.getRetainedSize(), this.getContextClassLoader(), this.hasStack(), this.isDaemon());
+        }
+            
+    }
+
+    class StackFrame {
+        private String stack;
+        private boolean hasLocal;
+        private int stackId;
+    
+    
+        public StackFrame(String stack, boolean hasLocal, int stackId) {
+            this.stack = stack;
+            this.hasLocal = hasLocal;
+            this.stackId = stackId;
+        }
+
+        public StackFrame(JsonObject obj) {
+            this.stack = obj.getString(Constant.StackFrame.STACK_NAME_KEY);
+            this.hasLocal = obj.getBoolean(Constant.StackFrame.HAS_LOCAL_KEY);
+            this.stackId = obj.getInteger(Constant.StackFrame.STACK_ID_KEY);
+        }
+        
+        public String toCSV() {
+            return String.format("%s,%s,%s\n",
+            this.getStack(), this.isHasLocal(), this.getStackId());
+        }
+
+        public String getStack() {
+            return stack;
+        }
+        public boolean isHasLocal() {
+            return hasLocal;
+        }
+
+        public int getStackId() {
+            return stackId;
+        }
+    }
+    
+    class Outbounds {
+        private int objectId;
+        private String prefix;
+        private String label;
+        private String suffix;
+        private long shallowSize;
+        private long retainedSize;
+        private boolean hasInbound;
+        private boolean hasOutbound;
+        private int objectType;
+        private boolean gCRoot;
+        private int parentId;
+
+        public Outbounds(JsonObject obj, int parentId) {
+            this.objectId = obj.getInteger(Constant.Outbounds.OBJECT_ID_KEY);
+            this.prefix = obj.getString(Constant.Outbounds.PREFIX_KEY);
+            this.label = obj.getString(Constant.Outbounds.LABEL_KEY);
+            this.suffix = obj.getString(Constant.Outbounds.SUFFIX_KEY);
+            this.shallowSize = obj.getLong(Constant.Outbounds.SHALLOW_SIZE_KEY);
+            this.retainedSize = obj.getLong(Constant.Outbounds.RETAINED_SIZE_KEY);
+            this.hasInbound = obj.getBoolean(Constant.Outbounds.HAS_INBOUND_KEY);
+            this.hasOutbound = obj.getBoolean(Constant.Outbounds.HAS_OUTBOUND_KEY);
+            this.objectType = obj.getInteger(Constant.Outbounds.OBJECT_TYPE_KEY);
+            this.gCRoot = obj.getBoolean(Constant.Outbounds.GC_ROOT_KEY);
+            this.parentId = parentId;
+        }
+
+        public int getObjectId() {
+            return objectId;
+        }
+
+        public String getPrefix() {
+            return prefix;
+        }
+        public String getLabel() {
+            return label;
+        }
+        public String getSuffix() {
+            return suffix;
+        }
+        public long getShallowSize() {
+            return shallowSize;
+        }
+        public long getRetainedSize() {
+            return retainedSize;
+        }
+        public boolean isHasInbound() {
+            return hasInbound;
+        }
+        public boolean isHasOutbound() {
+            return hasOutbound;
+        }
+        public int getObjectType() {
+            return objectType;
+        }
+        public boolean isGCRoot() {
+            return gCRoot;
+        }
+        public int getParentId() {
+            return parentId;
+        }
+        public String toCSV() {
+            return String.format("%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s\n", objectId, prefix, label, suffix, shallowSize, retainedSize, hasInbound, hasOutbound, objectType, gCRoot,parentId);
+        }
+    }
+    
     @RouteMeta(path = "/collect/domtree", method = HttpMethod.GET)
     void collectDomTree(Future<JsonObject> future, RoutingContext context, @ParamKey("file") String file) {
     	
@@ -219,7 +434,6 @@ public class HeapHubCollectRoutes extends HeapHubBaseRoute{
                 return arr;
             }
         }
-
     
     private ArrayList<DomTreeObject> collectDominatorChildren(String fileName, int parentId, int branchingFactor) {
         try {
@@ -255,7 +469,7 @@ public class HeapHubCollectRoutes extends HeapHubBaseRoute{
         }
     }
 
-    public  ArrayList<DomTreeObject> getDomTree(String fileName, ArrayList<DomTreeObject> roots, long minSize, int branchingFactor, int maxDepth) {
+    public  ArrayList<DomTreeObject> collectDomTree(String fileName, ArrayList<DomTreeObject> roots, long minSize, int branchingFactor, int maxDepth) {
         class StackObjInfo {
             public DomTreeObject obj;
             public int depth;
@@ -297,5 +511,296 @@ public class HeapHubCollectRoutes extends HeapHubBaseRoute{
         }
         return output;
     }
+
+    public ArrayList<ClassHistoInfo> collectHistogram(String heapName, long minSize) {
+        try {
+            int i = 1;
+            boolean loop = true;
+            ArrayList<ClassHistoInfo> arr = new ArrayList<ClassHistoInfo>(32);
+            while(loop) {
+                ArrayList<ClassHistoInfo> objs = getHistogramRoots(heapName, i, 32);
+                // System.out.println(objs);
+                if (objs == null || objs.size() == 0) {
+                    break;
+                }
+                for (ClassHistoInfo obj : objs) {
+                    if (obj.getShallowSize() < minSize) {
+                        loop = false;
+                        break;
+                    } else {
+                        arr.add(obj);
+                    }
+                }
+                i++;
+            }
+            return arr;
+        } catch (Exception e){
+            e.printStackTrace();
+            return null;
+        }
+    }
+
+    public ArrayList<ClassHistoInfo> getHistogramRoots(String fileName, int page, int pageSize) {
+        try {
+            URI uri = new URIBuilder(Constant.API.HEAP_DUMP_API_PREFIX + "/" + fileName + "/histogram")
+            .addParameter("groupingBy", "BY_CLASS")
+            .addParameter("page", String.valueOf(page))
+            .addParameter("pageSize", String.valueOf(pageSize))
+            .build();
+            HttpGet getDomTreeRoots = new HttpGet(uri); 
+            Response res = new Response(CLIENT_SYNC.execute(getDomTreeRoots));
+            // System.out.println("SPOT 2");
+            if (res.getStatusCode() >= 300) {
+                // TODO
+                return null;
+            } else {
+                JsonObject resJSON = res.getBody();
+                if (resJSON == null) {
+                    // TODO
+                    return null;
+                }
+
+                JsonArray jsonArray = resJSON.getJsonArray("data");
+                if (jsonArray == null) {
+                    System.out.println("resJSON.data is null");
+                    // TODO: throw exception
+                    return null;
+                }
+                int i = 0;
+                // get first index in array
+                JsonObject curr = jsonArray.getJsonObject(i);
+                if (curr == null) {
+                    System.out.println("curr is null");
+                    return null;
+                }
+                System.out.println(curr);
+                ArrayList<ClassHistoInfo> arr = new ArrayList<ClassHistoInfo>(32);
+                // TODO: update with proper return format
+                while (curr != null) {
+                    arr.add(new ClassHistoInfo(curr));
+                    i++;
+                    curr = jsonArray.getJsonObject(i);
+                    // produce to next object in array
+                }
+                return arr;
+            }
+        } catch (Exception e) {
+            // TODO
+            return null;
+        }
+    }
     
+    public ArrayList<ThreadInfo> collectThreads(String heapName, long minSize) {
+        try {
+            int i = 1;
+            boolean loop = true;
+            ArrayList<ThreadInfo> arr = new ArrayList<ThreadInfo>(32);
+            while(loop) {
+                ArrayList<ThreadInfo> objs = getThreads(heapName, i, 32);
+                if (objs == null || objs.size() == 0) {
+                    break;
+                }
+                for (ThreadInfo obj : objs) {
+                    if (obj.getRetainedSize() < minSize) {
+                        loop = false;
+                        break;
+                    } else {
+                        arr.add(obj);
+                    }
+                }
+                i++;
+            }
+            return arr;
+        } catch (Exception e){
+            e.printStackTrace();
+            return null;
+        }
+    }
+
+    public ArrayList<ThreadInfo> getThreads(String fileName, int page, int pageSize) throws ClientProtocolException, IOException, URISyntaxException {
+            URI uri = new URIBuilder(Constant.API.HEAP_DUMP_API_PREFIX + "/" + fileName + "/threads")
+            .addParameter("page", String.valueOf(page))
+            .addParameter("pageSize", String.valueOf(pageSize))
+            .build();
+            HttpGet getThreads = new HttpGet(uri);
+            Response res = new Response(CLIENT_SYNC.execute(getThreads));
+            if (res.getStatusCode() >= 300) {
+                // TODO: throw exception
+                return null;
+            } else {
+                // create json object with res body
+                JsonObject resJSON = res.getBody();
+                if (resJSON == null) {
+                    System.out.println("resJSON is null");
+                    // TODO: throw exception
+                    return null;
+                }
+                // get data attribute of json body
+                JsonArray jsonArray = resJSON.getJsonArray("data");
+                if (jsonArray == null) {
+                    System.out.println("resJSON.data is null");
+                    // TODO: throw exception
+                    return null;
+                }
+                int i = 0;
+                // get first index in array
+                JsonObject curr = jsonArray.getJsonObject(i);
+                if (curr == null) {
+                    System.out.println("curr is null");
+                    return null;
+                }
+                // TODO: update with proper return format
+                ArrayList<ThreadInfo> arr = new ArrayList<ThreadInfo>(32);
+                while (curr != null) {
+                    ThreadInfo thread = new ThreadInfo(curr);
+                    i++;
+                    curr = jsonArray.getJsonObject(i);
+                    arr.add(thread);
+                }
+                return arr;
+            }
+        }
+
+    public ArrayList<StackFrame> collectStackTraces(String heapName,ArrayList<ThreadInfo> threads) {
+        try {
+            ArrayList<StackFrame> acc = new ArrayList<StackFrame>();
+            for (ThreadInfo thread : threads) {
+                ArrayList<StackFrame> stacktrace = getStackTrace(heapName, thread.getObjectId());
+                acc.addAll(stacktrace);
+            }
+        return acc;
+        } catch (Exception e) {
+        return null;
+        }
+    }
+
+    public ArrayList<StackFrame> getStackTrace(String heapName, int threadId) throws ClientProtocolException, IOException, URISyntaxException {
+        URI uri = new URIBuilder(Constant.API.HEAP_DUMP_API_PREFIX + "/" + heapName + "/threads")
+		.addParameter("objectId", String.valueOf(threadId))
+		.build();
+		HttpGet getStackTrace = new HttpGet(uri);
+        Response res = new Response(CLIENT_SYNC.execute(getStackTrace));
+        if (res.getStatusCode() >= 300) {
+            // TODO: throw exception
+            return null;
+        } else {
+            // create json object with res body
+            JsonArray resJSON = new JsonArray(res.getBody().encode());
+            if (resJSON == null) {
+                System.out.println("resJSON is null");
+                // TODO: throw exception
+                return null;
+            }                
+            int i = 0;
+            // get first index in array
+            JsonObject curr = resJSON.getJsonObject(i);
+            if (curr == null) {
+                System.out.println("curr is null");
+                return null;
+            }
+            // TODO: update with proper return format
+            ArrayList<StackFrame> arr = new ArrayList<StackFrame>(32);
+            while (curr != null) {
+                StackFrame stack = new StackFrame(curr);
+                i++;
+                curr = resJSON.getJsonObject(i);
+                arr.add(stack);
+            }
+            return arr;
+        }
+
+    }
+
+    private ArrayList<Outbounds> collectSingleRootOutbounds(String heapName, DomTreeObject root, int max) {
+        try {
+            int i = 1;
+            int cnt = 0;
+            int id = root.getObjectId();
+            boolean loop = true;
+            ArrayList<Outbounds> arr = new ArrayList<Outbounds>(32);
+            while(loop) {
+                ArrayList<Outbounds> obs = getOutbounds(heapName, id, i, 32);
+                if (obs == null || obs.size() == 0) {
+                    break;
+                }
+                for (Outbounds ob : obs) {
+                    if (cnt >= max) {
+                        loop = false;
+                        break;
+                    } else {
+                        arr.add(ob);
+                        cnt++;
+                    }
+                }
+                i++;
+            }
+            return arr;
+        } catch (Exception e){
+            e.printStackTrace();
+            return null;
+        }
+    }
+
+    public ArrayList<Outbounds> getOutbounds(String fileName, int objectId, int page, int pageSize){
+        try {
+            URI uri = new URIBuilder(Constant.API.HEAP_DUMP_API_PREFIX + "/" + fileName + "/outbounds")
+            .addParameter("objectId", String.valueOf(objectId))
+            .addParameter("page", String.valueOf(page))
+            .addParameter("pageSize", String.valueOf(pageSize))
+            .build();
+            HttpGet getStackTrace = new HttpGet(uri);
+            Response res = new Response(CLIENT_SYNC.execute(getStackTrace));
+            if (res.getStatusCode() >= 300) {
+                // TODO
+                return null;
+            } else {
+                JsonObject resJSON = res.getBody();
+                if (resJSON == null) {
+                    // TODO
+                    return null;
+                }
+
+                JsonArray jsonArray = resJSON.getJsonArray("data");
+                if (jsonArray == null) {
+                    System.out.println("resJSON.data is null");
+                    // TODO: throw exception
+                    return null;
+                }
+                int i = 0;
+                // get first index in array
+                JsonObject curr = jsonArray.getJsonObject(i);
+                if (curr == null) {
+                    System.out.println("curr is null");
+                    return null;
+                }
+                ArrayList<Outbounds> arr = new ArrayList<Outbounds>(32);
+                // TODO: update with proper return format
+                while (curr != null) {
+                    // print now until we decide how to store data
+                    arr.add(new Outbounds(curr, objectId));
+                    i++;
+                    curr = jsonArray.getJsonObject(i);
+                    // produce to next object in array
+                }
+                return arr;
+            }
+        } catch (Exception e) {
+            // TODO
+            return null;
+        }
+    }
+
+    public ArrayList<Outbounds> collectRootOutbounds(String heapName, ArrayList<DomTreeObject> roots, int max) {
+        try {
+            ArrayList<Outbounds> acc = new ArrayList<Outbounds>();
+            for (DomTreeObject root : roots) {
+                ArrayList<Outbounds> stacktrace = collectSingleRootOutbounds(heapName, root, max);
+                acc.addAll(stacktrace);
+            }
+            return acc;
+        } catch (Exception e) {
+            return null;
+        }
+    }
+
 }

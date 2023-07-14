@@ -44,6 +44,45 @@ public interface Constant extends org.eclipse.jifa.common.Constant {
         String PERCENT_KEY = "percent";
     }
 
+    interface Histogram {
+        String NUM_OBJECTS_KEY = "numberOfObjects";
+        String SHALLOW_SIZE_KEY = "shallowSize";
+        String RETAINED_SIZE_KEY = "retainedSize";
+        String LABEL_KEY = "label";
+        String OBJECT_ID_KEY = "objectId";
+        String TYPE_KEY = "type";        
+    }
+
+    interface Threads {
+        String OBJECT_ID_KEY = "objectId";
+        String OBJECT_KEY = "object";
+        String NAME_KEY = "name";
+        String SHALLOW_SIZE_KEY = "shallowSize";
+        String RETAINED_SIZE_KEY = "retainedSize";
+        String CONTEXT_CLASS_LOADER_KEY = "contextClassLoader";
+        String HAS_STACK_KEY = "hasStack";
+        String DAEMON_KEY = "daemon";
+    }
+
+    interface StackFrame {
+        String STACK_NAME_KEY = "stack";
+        String HAS_LOCAL_KEY = "hasLocal";
+        String STACK_ID_KEY = "stackId";
+    }
+
+    interface Outbounds {
+        String OBJECT_ID_KEY = "objectId";
+        String PREFIX_KEY = "prefix";
+        String LABEL_KEY = "label";
+        String SUFFIX_KEY = "suffix";
+        String SHALLOW_SIZE_KEY = "shallowSize";
+        String RETAINED_SIZE_KEY = "retainedSize";
+        String HAS_INBOUND_KEY = "hasInbound";
+        String HAS_OUTBOUND_KEY = "hasOutbound";
+        String OBJECT_TYPE_KEY = "objectType";
+        String GC_ROOT_KEY = "gcRoot";        
+    }
+
     interface API {
         String HEAP_DUMP_API_PREFIX = "heap-dump";
     }

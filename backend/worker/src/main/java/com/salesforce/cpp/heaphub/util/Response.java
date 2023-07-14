@@ -1,6 +1,7 @@
 package com.salesforce.cpp.heaphub.util;
 
 import java.io.IOException;
+import java.net.http.HttpRequest;
 
 import org.apache.http.HttpEntity;
 import org.apache.http.StatusLine;
