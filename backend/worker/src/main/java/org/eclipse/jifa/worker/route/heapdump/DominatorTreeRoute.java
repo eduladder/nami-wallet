@@ -36,7 +36,7 @@ import java.util.List;
 
 import static org.eclipse.jifa.common.util.Assertion.ASSERT;
 
-class DominatorTreeRoute extends HeapBaseRoute {
+public class DominatorTreeRoute extends HeapBaseRoute {
 
     private static Constructor<?> DEFAULT_NODE;
 

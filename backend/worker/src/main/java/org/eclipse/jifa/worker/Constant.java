@@ -33,6 +33,21 @@ public interface Constant extends org.eclipse.jifa.common.Constant {
         String RETAINED_HEAP_KEY = "retainedHeap";
     }
 
+    interface DomTree {
+        String SHALLOW_SIZE_KEY = "shallowSize";
+        String RETAINED_SIZE_KEY = "retainedSize";
+        String LABEL_KEY = "label";
+        String SUFFIX_KEY = "suffix";
+        String OBJECT_ID_KEY = "objectId";
+        String OBJECT_TYPE_KEY = "objectType";
+        String GC_ROOT_KEY = "gcRoot";
+        String PERCENT_KEY = "percent";
+    }
+
+    interface API {
+        String HEAP_DUMP_API_PREFIX = "heap-dump";
+    }
+
     interface File {
         String INFO_FILE_SUFFIX = "-info.json";
     }
