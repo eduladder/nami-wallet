@@ -1,10 +1,12 @@
 package com.salesforce.cpp.heaphub.route;
 
+import java.io.FileOutputStream;
 import java.io.IOException;
 import java.lang.management.ThreadInfo;
 import java.net.URI;
 import java.net.URISyntaxException;
 import java.util.ArrayList;
+import java.util.List;
 import java.util.Stack;
 
 import org.apache.http.client.ClientProtocolException;
@@ -15,6 +17,7 @@ import org.eclipse.jifa.worker.route.ParamKey;
 import org.eclipse.jifa.worker.route.RouteMeta;
 import org.eclipse.jifa.worker.vo.heapdump.dominatortree.BaseRecord;
 import org.eclipse.jifa.worker.vo.heapdump.histogram.Record;
+import org.json.JSONArray;
 
 import com.fasterxml.jackson.databind.JsonNode;
 import com.salesforce.cpp.heaphub.util.Response;
@@ -304,6 +307,138 @@ public class HeapHubCollectRoutes extends HeapHubBaseRoute{
         }
     }
     
+    class PathToGCRootElement {
+        private int objectId;
+        private int parentId;
+        private String label;
+        private String memoryLocation;
+        private boolean origin;
+        private String prefix;
+        private String suffix;
+        private int shallowSize;
+        private int retainedSize;
+        private boolean hasInbound;
+        private boolean hasOutbound;
+        private int objectType;
+        private boolean gCRoot;
+
+        public PathToGCRootElement(JsonObject obj, int parentId) {
+            if (obj.getString("suffix") == null) {
+                suffix = "";
+            } else {
+                suffix = obj.getString("suffix");
+            }
+
+            if (obj.getString("prefix") == null) {
+                prefix = "";
+            } else {
+                prefix = obj.getString("prefix");
+            }
+
+            if (obj.getBoolean("hasInbound") == null) {
+                hasInbound = false;
+            } else {
+                hasInbound = obj.getBoolean("hasInbound");
+            }
+
+            if (obj.getBoolean("hasOutbound") == null) {
+                hasOutbound = false;
+            } else {
+                hasOutbound = obj.getBoolean("hasOutbound");
+            }
+
+            if (obj.getBoolean("GCRoot") == null) {
+                gCRoot = false;
+            } else {
+                gCRoot = obj.getBoolean("GCRoot");
+            }
+
+            this.parentId = parentId;
+            objectId = obj.getInteger("objectId");
+            label = obj.getString("label");
+            shallowSize = obj.getInteger("shallowSize");
+            retainedSize = obj.getInteger("retainedSize");
+            objectType = obj.getInteger("objectType");
+        }
+        
+        public int getObjectId() {
+            return objectId;
+        }
+
+        public int parentId() {
+            return parentId;
+        }
+
+        public String label() {
+            return label;
+        }
+        
+        public String memoryLocation() {
+            return memoryLocation;
+        }
+        
+        public boolean origin() {
+            return origin;
+        }
+        
+        public String suffix() {
+            return suffix;
+        }
+        
+        public String prefix() {
+            return prefix;
+        }
+        
+        public boolean hasInbound() {
+            return hasInbound;
+        }
+        
+        public boolean hasOutbound() {
+            return hasOutbound;
+        }
+        
+        public boolean gCRoot() {
+            return gCRoot;
+        }
+        
+        public int shallowSize() {
+            return shallowSize;
+        }
+        
+        public int retainedSize() {
+            return retainedSize;
+        }
+        
+        public int objectType() {
+            return objectType;
+        }
+        
+        public String toCSV() {
+            return String.format("%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s\n",
+                    parentId, objectId, label, memoryLocation, origin, suffix, prefix, hasInbound, hasOutbound, gCRoot, shallowSize, retainedSize, objectType);
+        }
+
+    }
+
+
+    class GCRootPath {
+        private List<PathToGCRootElement> path;
+        private boolean hasMore;
+
+        public GCRootPath(List<PathToGCRootElement> path, boolean hasMore) {
+            this.path = path;
+            this.hasMore = hasMore;
+        }
+        
+        public List<PathToGCRootElement> getPath() {
+            return path;
+        }
+        
+        public boolean hasMore() {
+            return hasMore;
+        }
+    }
+
     @RouteMeta(path = "/collect/domtree", method = HttpMethod.GET)
     void collectDomTree(Future<JsonObject> future, RoutingContext context, @ParamKey("file") String file) {
     	
@@ -801,6 +936,100 @@ public class HeapHubCollectRoutes extends HeapHubBaseRoute{
         } catch (Exception e) {
             return null;
         }
+    }
+
+    public ArrayList<PathToGCRootElement> collectPathsToGCRoots(String heapName, ArrayList<DomTreeObject> roots, FileOutputStream fos) {
+        try {
+            ArrayList<PathToGCRootElement> acc = new ArrayList<PathToGCRootElement>();
+            for (DomTreeObject root : roots) {
+                ArrayList<PathToGCRootElement> path = collectGCPath(heapName, root, fos);
+                acc.addAll(path);
+            }
+            return acc;
+        } catch (Exception e){
+            e.printStackTrace();
+            return null;
+        }
+    }
+    
+    public ArrayList<PathToGCRootElement> collectGCPath(String heapName, DomTreeObject root, FileOutputStream fos) throws IOException {
+            ArrayList<PathToGCRootElement> acc = new ArrayList<PathToGCRootElement>();
+            int i = 0;
+            GCRootPath curr = getPathToGCRoots(heapName, root.getObjectId(), 0, 10);
+            acc.addAll(curr.getPath());
+            while (curr.hasMore() && i < 10) {
+                curr = getPathToGCRoots(heapName, root.getObjectId(), 10 * i, 10);
+                acc.addAll(curr.getPath());
+                i++;
+            }
+            return acc;
+    }
+
+    public GCRootPath getPathToGCRoots(String fileName, int originId, int skip, int count)
+    {
+    try {
+            URI uri = new URIBuilder(Constant.API.HEAP_DUMP_API_PREFIX + "/" + fileName + "/pathToGCRoots")
+            .addParameter("origin", String.valueOf(originId))
+            .addParameter("skip", String.valueOf(skip))
+            .addParameter("count", String.valueOf(count))
+            .build();
+            HttpGet mergePathToGCRootsByClassId = new HttpGet(uri);
+            Response res = new Response(CLIENT_SYNC.execute(mergePathToGCRootsByClassId));
+            if (res.getStatusCode() >= 300) {
+                // TODO
+                System.out.println("res.getStatusCode() >= 300");
+                return null;
+            } else {
+                JsonObject resJSON = res.getBody();
+                if (resJSON == null) {
+                    // TODO
+                    System.out.println("resJSON is null");
+                    return null;
+                }
+
+                JsonObject tree = resJSON.getJsonObject("tree");
+                if (tree == null) {
+                    System.out.println("resJSON.tree is null");
+                    // TODO: throw exception
+                    return null;
+                }
+                // get first index in array
+                ArrayList<PathToGCRootElement> pathList = collectTree(tree);
+                GCRootPath path = new GCRootPath(pathList, resJSON.getBoolean("hasMore"));
+                return path;
+            }
+        } catch (Exception e) {
+            // TODO
+            return null;
+        }
+    }
+
+    public ArrayList<PathToGCRootElement> collectTree(JsonObject src) throws Exception {
+        class StackObjInfo {
+            public JsonObject node;
+            public int parentId;
+            public StackObjInfo(JsonObject node, int parentId) {
+                this.node = node;
+                this.parentId = parentId;
+            }
+        }
+    
+        Stack<StackObjInfo> stack = new Stack<StackObjInfo>();
+        stack.push(new StackObjInfo(src, -1));
+        
+        ArrayList<PathToGCRootElement> output = new ArrayList<PathToGCRootElement>();        
+    
+        while (!stack.isEmpty()) {
+            StackObjInfo curr = stack.pop();
+            output.add(new PathToGCRootElement(curr.node, curr.parentId));
+            int i = 0;
+            JsonArray children = curr.node.getJsonArray("children");
+            while (children.getJsonObject(i) != null) {
+                stack.push(new StackObjInfo(children.getJsonObject(i), curr.node.getInteger("objectId")));
+                i++;
+            }
+        }
+        return output;
     }
 
 }
