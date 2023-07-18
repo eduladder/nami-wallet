@@ -29,14 +29,13 @@ import io.vertx.ext.web.RoutingContext;
 
 public class HeapHubCollectRoutes extends HeapHubBaseRoute{
 
-    String errorsFilePath = "/Users/dbarra/git/heaphub/outputs/errors.txt";
+    String logFilePath = "/Users/dbarra/git/heaphub/outputs/log.txt";
 
-    File errorsFile = new File(errorsFilePath);
+    File logFile = new File(logFilePath);
 
-    // write text to errorsFile
     void log(Object o) {
         try {
-            FileOutputStream fos = new FileOutputStream(errorsFile, true);
+            FileOutputStream fos = new FileOutputStream(logFile, true);
             fos.write((o.toString()+"\n").getBytes());
             fos.close();
         } catch (IOException e) {
@@ -497,7 +496,6 @@ public class HeapHubCollectRoutes extends HeapHubBaseRoute{
 
     public ArrayList<DomTreeObject> getDomTreeRoots(String fileName, int page, int pageSize) throws ClientProtocolException, IOException, URISyntaxException {
         ArrayList<DomTreeObject> arr = new ArrayList<DomTreeObject>(32);
-        log("_____________ENTER_____________");
 
         URI uri = new URIBuilder(Constant.API.HEAP_DUMP_API_PREFIX + "/" + fileName + "/dominatorTree/roots")
 		.addParameter("grouping", "NONE")
@@ -506,14 +504,8 @@ public class HeapHubCollectRoutes extends HeapHubBaseRoute{
    		.build();
 		HttpGet getDomTreeRoots = new HttpGet(uri);
         // Cannot use Vert-X because need synchronouse client
-        log("_____________PRE-EXECUTE_____________");
-        log(CLIENT_SYNC);
-        log(CLIENT_SYNC == null);
-        log(getDomTreeRoots);
         HttpResponse rs = CLIENT_SYNC.execute(getDomTreeRoots);
-        log("_____________EXECUTED_____________");
         Response res = new Response(rs);
-        log("_____________RESPONSE TRANSLATED_____________");
         if (res.getStatusCode() >= 300) {
             log("Request Failed");
             return null;
@@ -727,6 +719,7 @@ public class HeapHubCollectRoutes extends HeapHubBaseRoute{
             while(loop) {
                 ArrayList<ThreadInfo> objs = getThreads(heapName, i, 32);
                 if (objs == null || objs.size() == 0) {
+                    log("____null_____");
                     break;
                 }
                 for (ThreadInfo obj : objs) {
@@ -771,6 +764,7 @@ public class HeapHubCollectRoutes extends HeapHubBaseRoute{
                     // TODO: throw exception
                     return null;
                 }
+                log("geThreads: " + jsonArray.size());
                 ArrayList<ThreadInfo> arr = new ArrayList<ThreadInfo>(32);
                 for (int i = 0; i < jsonArray.size(); i++) {
                     JsonObject curr = jsonArray.getJsonObject(i);
@@ -1003,9 +997,9 @@ public class HeapHubCollectRoutes extends HeapHubBaseRoute{
     }
 
     public void collectAsCSV(String heapName, String dest, long dominatorMinSize, int branchingFactor, int maxDepth, int maxOutbounds, long histoMinSize, long threadMinSize) throws Exception {
-            errorsFile.delete();
-            errorsFile.createNewFile();
-            
+            logFile.delete();
+            logFile.createNewFile();
+
             // ArrayList<DomTreeObject> domRoots = collectDominatorRoots(heapName, dominatorMinSize);
             
             // FileOutputStream dominatorsFOS = new FileOutputStream(dest + "/dominators.csv");    

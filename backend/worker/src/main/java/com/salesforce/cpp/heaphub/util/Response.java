@@ -25,14 +25,14 @@ public class Response {
 
     private JsonObject body;
 
-	String errorsFilePath = "/Users/dbarra/git/heaphub/outputs/errors.txt";
+	String logFilePath = "/Users/dbarra/git/heaphub/outputs/errors.txt";
 
-    File errorsFile = new File(errorsFilePath);
+    File logFile = new File(logFilePath);
 
     // write text to errorsFile
     void log(Object o) {
         try {
-            FileOutputStream fos = new FileOutputStream(errorsFile, true);
+            FileOutputStream fos = new FileOutputStream(logFile, true);
             fos.write((o.toString()+"\n").getBytes());
             fos.close();
         } catch (IOException e) {
