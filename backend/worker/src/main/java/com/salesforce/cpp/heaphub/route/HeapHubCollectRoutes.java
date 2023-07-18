@@ -420,7 +420,6 @@ public class HeapHubCollectRoutes extends HeapHubBaseRoute{
 
     }
 
-
     class GCRootPath {
         private List<PathToGCRootElement> path;
         private boolean hasMore;
@@ -654,7 +653,6 @@ public class HeapHubCollectRoutes extends HeapHubBaseRoute{
             ArrayList<ClassHistoInfo> arr = new ArrayList<ClassHistoInfo>(32);
             while(loop) {
                 ArrayList<ClassHistoInfo> objs = getHistogramRoots(heapName, i, 32);
-                // System.out.println(objs);
                 if (objs == null || objs.size() == 0) {
                     break;
                 }
@@ -684,7 +682,6 @@ public class HeapHubCollectRoutes extends HeapHubBaseRoute{
             .build();
             HttpGet getDomTreeRoots = new HttpGet(uri); 
             Response res = new Response(CLIENT_SYNC.execute(getDomTreeRoots));
-            // System.out.println("SPOT 2");
             if (res.getStatusCode() >= 300) {
                 // TODO
                 return null;
@@ -708,7 +705,6 @@ public class HeapHubCollectRoutes extends HeapHubBaseRoute{
                     System.out.println("curr is null");
                     return null;
                 }
-                System.out.println(curr);
                 ArrayList<ClassHistoInfo> arr = new ArrayList<ClassHistoInfo>(32);
                 // TODO: update with proper return format
                 while (curr != null) {
@@ -810,7 +806,7 @@ public class HeapHubCollectRoutes extends HeapHubBaseRoute{
     }
 
     public ArrayList<StackFrame> getStackTrace(String heapName, int threadId) throws ClientProtocolException, IOException, URISyntaxException {
-        URI uri = new URIBuilder(Constant.API.HEAP_DUMP_API_PREFIX + "/" + heapName + "/threads")
+        URI uri = new URIBuilder(Constant.API.HEAP_DUMP_API_PREFIX + "/" + heapName + "/stackTrace")
 		.addParameter("objectId", String.valueOf(threadId))
 		.build();
 		HttpGet getStackTrace = new HttpGet(uri);
@@ -1030,6 +1026,58 @@ public class HeapHubCollectRoutes extends HeapHubBaseRoute{
             }
         }
         return output;
+    }
+
+    public void collectAsCSV(String heapName, String dest, long dominatorMinSize, int branchingFactor, int maxDepth, int maxOutbounds, long histoMinSize, long threadMinSize) {
+        try {
+            ArrayList<DomTreeObject> domRoots = collectDominatorRoots(heapName, dominatorMinSize);
+            
+            FileOutputStream dominatorsFOS = new FileOutputStream(dest + "/dominators.csv");    
+            ArrayList<DomTreeObject> domTree = collectDomTree
+            (heapName, domRoots, dominatorMinSize, branchingFactor, maxDepth);
+            for (DomTreeObject obj : domTree) {
+                dominatorsFOS.write(obj.toCSV().getBytes());
+            }
+            dominatorsFOS.close();
+
+            FileOutputStream outboundsFOS = new FileOutputStream(dest + "/outbounds.csv");    
+            ArrayList<Outbounds> outbounds = collectRootOutbounds(heapName, domRoots, maxOutbounds);
+            for (Outbounds ob : outbounds) {
+                outboundsFOS.write(ob.toCSV().getBytes());
+            }
+            outboundsFOS.close();
+
+            FileOutputStream histogramFOS = new FileOutputStream(dest + "/histogram.csv");
+            ArrayList <ClassHistoInfo> histogram = collectHistogram(heapName, histoMinSize);
+            for (ClassHistoInfo h : histogram) {
+                histogramFOS.write(h.toCSV().getBytes());
+            }
+            histogramFOS.close();
+
+            FileOutputStream threadsFOS = new FileOutputStream(dest + "/threads.csv");
+            ArrayList<ThreadInfo> threads = collectThreads(heapName, threadMinSize);
+            for (ThreadInfo t : threads) {
+                threadsFOS.write(t.toCSV().getBytes());
+            }
+            threadsFOS.close();
+
+            FileOutputStream stackTraceFOS = new FileOutputStream(dest + "/stacktrace.csv");
+            ArrayList<StackFrame> stackFrames = collectStackTraces(heapName, threads);
+            for (StackFrame sf : stackFrames) {
+                stackTraceFOS.write(sf.toCSV().getBytes());
+            }
+            stackTraceFOS.close();
+
+            FileOutputStream gcRootsFOS = new FileOutputStream(dest + "/gcroots.csv");
+            ArrayList<PathToGCRootElement> gcPaths = collectPathsToGCRoots(heapName, domRoots, gcRootsFOS);
+            for (PathToGCRootElement p : gcPaths) {
+                gcRootsFOS.write(p.toCSV().getBytes());
+            }
+            gcRootsFOS.close();
+
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
     }
 
 }
