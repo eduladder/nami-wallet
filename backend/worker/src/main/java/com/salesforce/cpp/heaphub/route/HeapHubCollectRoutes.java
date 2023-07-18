@@ -1,51 +1,67 @@
 package com.salesforce.cpp.heaphub.route;
 
+import java.io.File;
 import java.io.FileOutputStream;
 import java.io.IOException;
-import java.lang.management.ThreadInfo;
 import java.net.URI;
 import java.net.URISyntaxException;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Stack;
 
+import org.apache.http.HttpResponse;
 import org.apache.http.client.ClientProtocolException;
 import org.apache.http.client.methods.HttpGet;
 import org.apache.http.client.utils.URIBuilder;
-import org.eclipse.jifa.worker.Global;
 import org.eclipse.jifa.worker.route.ParamKey;
 import org.eclipse.jifa.worker.route.RouteMeta;
 import org.eclipse.jifa.worker.vo.heapdump.dominatortree.BaseRecord;
-import org.eclipse.jifa.worker.vo.heapdump.histogram.Record;
-import org.json.JSONArray;
 
-import com.fasterxml.jackson.databind.JsonNode;
 import com.salesforce.cpp.heaphub.util.Response;
 
 import org.eclipse.jifa.worker.Constant;
 
-import io.vertx.core.AsyncResult;
 import io.vertx.core.Future;
-import io.vertx.core.Promise;
-import io.vertx.core.buffer.Buffer;
 import io.vertx.core.http.HttpMethod;
 import io.vertx.core.json.JsonArray;
 import io.vertx.core.json.JsonObject;
-import io.vertx.core.spi.metrics.Metrics;
 import io.vertx.ext.web.RoutingContext;
-import io.vertx.ext.web.client.HttpRequest;
 
 public class HeapHubCollectRoutes extends HeapHubBaseRoute{
 
+    String errorsFilePath = "/Users/dbarra/git/heaphub/outputs/errors.txt";
+
+    File errorsFile = new File(errorsFilePath);
+
+    // write text to errorsFile
+    void log(Object o) {
+        try {
+            FileOutputStream fos = new FileOutputStream(errorsFile, true);
+            fos.write((o.toString()+"\n").getBytes());
+            fos.close();
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
+    }
+
     class DomTreeObject extends BaseRecord {
-        private int parentId;
-        private String memLocation;
+        private int parentId; // done
+        private String memLocation; // done
+        // created_at missing
+        // update_at mising
+        // heap_id - missing 
+        // origin - missing - is this equivalent to deciding if root or not?
+        // has inbound and has outbound are not present in returned json
+        // prefix does not exist
+        // private double percent; // not included in the stored information
 
         public DomTreeObject() {
             super();
         }
 
         public DomTreeObject(JsonObject obj) {
+            // log("____creating dom tree object___");
+            // log(obj.encodePrettily());
             this.setGCRoot(obj.getBoolean(Constant.DomTree.GC_ROOT_KEY));
             this.setLabel(obj.getString(Constant.DomTree.LABEL_KEY));
             this.setObjectId(obj.getInteger(Constant.DomTree.OBJECT_ID_KEY));
@@ -93,13 +109,17 @@ public class HeapHubCollectRoutes extends HeapHubBaseRoute{
     }
 
     class ClassHistoInfo {
+        // missing heap_id
+        // created_at missing
+        // updated_at missing
         private String memLocation;
-        private String label;
-        private long numberOfObjects;
-        private long shallowSize;
-        private long retainedSize;
-        private int objectId;
-        private int type;
+        private String label; // done
+        private long numberOfObjects; // done
+        private long shallowSize; // done
+        private long retainedSize; // done
+        private int objectId; // done
+        private int type; // done
+
 
         public ClassHistoInfo(JsonObject obj) {
             String label = obj.getString(Constant.Histogram.LABEL_KEY);
@@ -147,21 +167,15 @@ public class HeapHubCollectRoutes extends HeapHubBaseRoute{
     }
 
     class ThreadInfo {
-        private int objectId;
-
-        private String object;
-    
-        private String name;
-    
-        private long shallowSize;
-    
-        private long retainedSize;
-    
-        private String contextClassLoader;
-    
-        private boolean hasStack;
-    
-        private boolean daemon;
+        // add heap_id, created_at, updated_at
+        private int objectId; // done
+        private String object; // done object_label
+        private String name; // done
+        private long shallowSize; // done
+        private long retainedSize; // done
+        private String contextClassLoader; // done
+        private boolean hasStack; // done
+        private boolean daemon; // done
 
         public ThreadInfo(JsonObject obj) {
             this.objectId = obj.getInteger(Constant.Threads.OBJECT_ID_KEY);
@@ -207,9 +221,12 @@ public class HeapHubCollectRoutes extends HeapHubBaseRoute{
     }
 
     class StackFrame {
-        private String stack;
-        private boolean hasLocal;
-        private int stackId;
+        // this needs to be distinguished from outbounds
+        // missing first_non_native_frame, created_at, updated_at
+        // what is object_id, object_label, prefix, suffiz, hasinbound, hasoutbound, shallowsize, retainedsize, gcroot
+        private String stack; // done
+        private boolean hasLocal; // done
+        private int stackId; // done
     
     
         public StackFrame(String stack, boolean hasLocal, int stackId) {
@@ -242,6 +259,7 @@ public class HeapHubCollectRoutes extends HeapHubBaseRoute{
     }
     
     class Outbounds {
+        // needs to be distinguished from stack frame
         private int objectId;
         private String prefix;
         private String label;
@@ -252,7 +270,7 @@ public class HeapHubCollectRoutes extends HeapHubBaseRoute{
         private boolean hasOutbound;
         private int objectType;
         private boolean gCRoot;
-        private int parentId;
+        private int parentId; // currently not being included
 
         public Outbounds(JsonObject obj, int parentId) {
             this.objectId = obj.getInteger(Constant.Outbounds.OBJECT_ID_KEY);
@@ -308,6 +326,7 @@ public class HeapHubCollectRoutes extends HeapHubBaseRoute{
     }
     
     class PathToGCRootElement {
+        // absolutely missing...
         private int objectId;
         private int parentId;
         private String label;
@@ -438,22 +457,14 @@ public class HeapHubCollectRoutes extends HeapHubBaseRoute{
         }
     }
 
-    @RouteMeta(path = "/collect/domtree", method = HttpMethod.GET)
-    void collectDomTree(Future<JsonObject> future, RoutingContext context, @ParamKey("file") String file) {
-    	
-        HttpRequest<Buffer> request =
-        CLIENT.request(HttpMethod.GET, Global.PORT, Global.HOST, uri("/heap-dump/2_eu35.hprof/dominatorTree/roots?page=1&pageSize=10&grouping=NONE"));
-       
-        request.send(
-            ar -> {
-            	JsonObject resp = null;
-                if(ar.succeeded()) {
-                	 resp = ar.result().bodyAsJsonObject();
+    // Test Route: 
+    // http://localhost:8102/jifa-api/heaphub/2_eu35.hprof/collect?dominatorMinSize=50000000&maxDepth=2&branchingFactor=10&maxOutbounds=10&histoMinSize=10000000&threadMinSize=10000000
 
-                }
-                future.complete(resp);
-            }
-        );    	
+    @RouteMeta(path = "/collect", method = HttpMethod.GET)
+    void collect(Future<JsonObject> future, RoutingContext context, @ParamKey("file") String file, @ParamKey("dominatorMinSize") long dominatorMinSize, @ParamKey("branchingFactor") int branchingFactor, @ParamKey("maxDepth") int maxDepth, @ParamKey("maxOutbounds") int maxOutbounds, @ParamKey("histoMinSize") long histoMinSize, @ParamKey("threadMinSize") long threadMinSize) throws Exception{
+        String dest = "/Users/dbarra/git/heaphub/outputs";
+        collectAsCSV(file, dest, dominatorMinSize, branchingFactor, maxDepth, maxOutbounds, histoMinSize, threadMinSize);
+        future.complete(new JsonObject("{\"success\": \"true\"}"));
     }
 
     public ArrayList<DomTreeObject> collectDominatorRoots(String fileName, long minSize) {
@@ -476,6 +487,7 @@ public class HeapHubCollectRoutes extends HeapHubBaseRoute{
                 }
                 i++;
             }
+            // log("Collect Dominator Roots: " + arr);
             return arr;
         } catch (Exception e){
             e.printStackTrace();
@@ -485,6 +497,7 @@ public class HeapHubCollectRoutes extends HeapHubBaseRoute{
 
     public ArrayList<DomTreeObject> getDomTreeRoots(String fileName, int page, int pageSize) throws ClientProtocolException, IOException, URISyntaxException {
         ArrayList<DomTreeObject> arr = new ArrayList<DomTreeObject>(32);
+        log("_____________ENTER_____________");
 
         URI uri = new URIBuilder(Constant.API.HEAP_DUMP_API_PREFIX + "/" + fileName + "/dominatorTree/roots")
 		.addParameter("grouping", "NONE")
@@ -493,30 +506,33 @@ public class HeapHubCollectRoutes extends HeapHubBaseRoute{
    		.build();
 		HttpGet getDomTreeRoots = new HttpGet(uri);
         // Cannot use Vert-X because need synchronouse client
-        Response res = new Response(CLIENT_SYNC.execute(getDomTreeRoots));
+        log("_____________PRE-EXECUTE_____________");
+        log(CLIENT_SYNC);
+        log(CLIENT_SYNC == null);
+        log(getDomTreeRoots);
+        HttpResponse rs = CLIENT_SYNC.execute(getDomTreeRoots);
+        log("_____________EXECUTED_____________");
+        Response res = new Response(rs);
+        log("_____________RESPONSE TRANSLATED_____________");
         if (res.getStatusCode() >= 300) {
-            System.out.print("Request Failed");
+            log("Request Failed");
             return null;
         }
         JsonObject resJSON = res.getBody();
         JsonArray jSONArray = resJSON.getJsonArray("data");
         if (jSONArray == null) {
+            log("jsonArray null");
             return null;
         }
         int i = 0;
         // get first index in array
-        JsonObject curr = jSONArray.getJsonObject(i);
-        if (curr == null) {
-            System.out.println("curr is null");
-            return null;
-        }
-        while (curr != null) {
-            // print now until we decide how to store data
+
+        for (i = 0; i < jSONArray.size(); i++) {
+            JsonObject curr = jSONArray.getJsonObject(i);
             DomTreeObject obj = new DomTreeObject(curr);
             arr.add(obj);
-            i++;
-            curr = jSONArray.getJsonObject(i);
         }
+        // log("getDomTree Return: " + arr);
         return arr;
     }
 
@@ -537,33 +553,23 @@ public class HeapHubCollectRoutes extends HeapHubBaseRoute{
                 // create json object with res body
                 JsonObject resJSON = res.getBody();
                 if (resJSON == null) {
-                    System.out.println("resJSON is null");
+                    log("resJSON is null");
                     // TODO: throw exception
                     return null;
                 }
                 // get data attribute of json body
                 JsonArray jSONArray = resJSON.getJsonArray("data");
                 if (jSONArray == null) {
-                    System.out.println("resJSON.data is null");
+                    log("resJSON.data is null");
                     // TODO: throw exception
                     return null;
                 }
-                int i = 0;
-                // get first index in array
-                // System.out.println(resJSON.get(i));
-                JsonObject curr = jSONArray.getJsonObject(i);
-                if (curr == null) {
-                    System.out.println("curr is null");
-                    return null;
-                }
                 ArrayList<DomTreeObject> arr = new ArrayList<DomTreeObject>(32);
-                while (curr != null) {
-                    // print now until we decide how to store data
+                // get first index in array
+                for (int i = 0; i < jSONArray.size(); i++) {
+                    JsonObject curr = jSONArray.getJsonObject(i);
                     DomTreeObject obj = new DomTreeObject(curr, parentId);
                     arr.add(obj);
-                    i++;
-                    curr = jSONArray.getJsonObject(i);
-                    // produce to next object in array
                 }
                 return arr;
             }
@@ -582,7 +588,7 @@ public class HeapHubCollectRoutes extends HeapHubBaseRoute{
                 }
                 for (DomTreeObject obj : objs) {
                 // if (dominatorTree.containsKey(obj.getLabel())) {
-                //     System.out.println("DUPLICATE KEY: " + obj.getLabel());
+                //     writeError("DUPLICATE KEY: " + obj.getLabel());
                 // }
                     output.add(obj);
                     cnt++;
@@ -680,8 +686,8 @@ public class HeapHubCollectRoutes extends HeapHubBaseRoute{
             .addParameter("page", String.valueOf(page))
             .addParameter("pageSize", String.valueOf(pageSize))
             .build();
-            HttpGet getDomTreeRoots = new HttpGet(uri); 
-            Response res = new Response(CLIENT_SYNC.execute(getDomTreeRoots));
+            HttpGet getHistoRoots = new HttpGet(uri); 
+            Response res = new Response(CLIENT_SYNC.execute(getHistoRoots));
             if (res.getStatusCode() >= 300) {
                 // TODO
                 return null;
@@ -694,24 +700,16 @@ public class HeapHubCollectRoutes extends HeapHubBaseRoute{
 
                 JsonArray jsonArray = resJSON.getJsonArray("data");
                 if (jsonArray == null) {
-                    System.out.println("resJSON.data is null");
+                    log("resJSON.data is null");
                     // TODO: throw exception
                     return null;
                 }
-                int i = 0;
-                // get first index in array
-                JsonObject curr = jsonArray.getJsonObject(i);
-                if (curr == null) {
-                    System.out.println("curr is null");
-                    return null;
-                }
                 ArrayList<ClassHistoInfo> arr = new ArrayList<ClassHistoInfo>(32);
-                // TODO: update with proper return format
-                while (curr != null) {
+
+                for(int i = 0; i < jsonArray.size(); i++) {
+                    JsonObject curr = jsonArray.getJsonObject(i);
                     arr.add(new ClassHistoInfo(curr));
-                    i++;
-                    curr = jsonArray.getJsonObject(i);
-                    // produce to next object in array
+
                 }
                 return arr;
             }
@@ -762,30 +760,21 @@ public class HeapHubCollectRoutes extends HeapHubBaseRoute{
                 // create json object with res body
                 JsonObject resJSON = res.getBody();
                 if (resJSON == null) {
-                    System.out.println("resJSON is null");
+                    log("resJSON is null");
                     // TODO: throw exception
                     return null;
                 }
                 // get data attribute of json body
                 JsonArray jsonArray = resJSON.getJsonArray("data");
                 if (jsonArray == null) {
-                    System.out.println("resJSON.data is null");
+                    log("resJSON.data is null");
                     // TODO: throw exception
                     return null;
                 }
-                int i = 0;
-                // get first index in array
-                JsonObject curr = jsonArray.getJsonObject(i);
-                if (curr == null) {
-                    System.out.println("curr is null");
-                    return null;
-                }
-                // TODO: update with proper return format
                 ArrayList<ThreadInfo> arr = new ArrayList<ThreadInfo>(32);
-                while (curr != null) {
+                for (int i = 0; i < jsonArray.size(); i++) {
+                    JsonObject curr = jsonArray.getJsonObject(i);
                     ThreadInfo thread = new ThreadInfo(curr);
-                    i++;
-                    curr = jsonArray.getJsonObject(i);
                     arr.add(thread);
                 }
                 return arr;
@@ -816,26 +805,19 @@ public class HeapHubCollectRoutes extends HeapHubBaseRoute{
             return null;
         } else {
             // create json object with res body
-            JsonArray resJSON = new JsonArray(res.getBody().encode());
-            if (resJSON == null) {
-                System.out.println("resJSON is null");
+            if (res.getBody() == null) {
+                log("body is null");
                 // TODO: throw exception
                 return null;
             }                
-            int i = 0;
-            // get first index in array
-            JsonObject curr = resJSON.getJsonObject(i);
-            if (curr == null) {
-                System.out.println("curr is null");
-                return null;
-            }
+            JsonArray jsonArray = new JsonArray(res.getBody().encode());
             // TODO: update with proper return format
             ArrayList<StackFrame> arr = new ArrayList<StackFrame>(32);
-            while (curr != null) {
+            for (int i = 0; i < jsonArray.size(); i++) {
+                JsonObject curr = jsonArray.getJsonObject(i);
                 StackFrame stack = new StackFrame(curr);
-                i++;
-                curr = resJSON.getJsonObject(i);
                 arr.add(stack);
+                i++;
             }
             return arr;
         }
@@ -893,24 +875,16 @@ public class HeapHubCollectRoutes extends HeapHubBaseRoute{
 
                 JsonArray jsonArray = resJSON.getJsonArray("data");
                 if (jsonArray == null) {
-                    System.out.println("resJSON.data is null");
+                    log("resJSON.data is null");
                     // TODO: throw exception
-                    return null;
-                }
-                int i = 0;
-                // get first index in array
-                JsonObject curr = jsonArray.getJsonObject(i);
-                if (curr == null) {
-                    System.out.println("curr is null");
                     return null;
                 }
                 ArrayList<Outbounds> arr = new ArrayList<Outbounds>(32);
                 // TODO: update with proper return format
-                while (curr != null) {
+                for (int i = 0; i < jsonArray.size(); i++) {
                     // print now until we decide how to store data
+                    JsonObject curr = jsonArray.getJsonObject(i);
                     arr.add(new Outbounds(curr, objectId));
-                    i++;
-                    curr = jsonArray.getJsonObject(i);
                     // produce to next object in array
                 }
                 return arr;
@@ -973,19 +947,19 @@ public class HeapHubCollectRoutes extends HeapHubBaseRoute{
             Response res = new Response(CLIENT_SYNC.execute(mergePathToGCRootsByClassId));
             if (res.getStatusCode() >= 300) {
                 // TODO
-                System.out.println("res.getStatusCode() >= 300");
+                log("res.getStatusCode() >= 300");
                 return null;
             } else {
                 JsonObject resJSON = res.getBody();
                 if (resJSON == null) {
                     // TODO
-                    System.out.println("resJSON is null");
+                    log("resJSON is null");
                     return null;
                 }
 
                 JsonObject tree = resJSON.getJsonObject("tree");
                 if (tree == null) {
-                    System.out.println("resJSON.tree is null");
+                    log("resJSON.tree is null");
                     // TODO: throw exception
                     return null;
                 }
@@ -1028,31 +1002,33 @@ public class HeapHubCollectRoutes extends HeapHubBaseRoute{
         return output;
     }
 
-    public void collectAsCSV(String heapName, String dest, long dominatorMinSize, int branchingFactor, int maxDepth, int maxOutbounds, long histoMinSize, long threadMinSize) {
-        try {
-            ArrayList<DomTreeObject> domRoots = collectDominatorRoots(heapName, dominatorMinSize);
+    public void collectAsCSV(String heapName, String dest, long dominatorMinSize, int branchingFactor, int maxDepth, int maxOutbounds, long histoMinSize, long threadMinSize) throws Exception {
+            errorsFile.delete();
+            errorsFile.createNewFile();
             
-            FileOutputStream dominatorsFOS = new FileOutputStream(dest + "/dominators.csv");    
-            ArrayList<DomTreeObject> domTree = collectDomTree
-            (heapName, domRoots, dominatorMinSize, branchingFactor, maxDepth);
-            for (DomTreeObject obj : domTree) {
-                dominatorsFOS.write(obj.toCSV().getBytes());
-            }
-            dominatorsFOS.close();
+            // ArrayList<DomTreeObject> domRoots = collectDominatorRoots(heapName, dominatorMinSize);
+            
+            // FileOutputStream dominatorsFOS = new FileOutputStream(dest + "/dominators.csv");    
+            // ArrayList<DomTreeObject> domTree = collectDomTree
+            // (heapName, domRoots, dominatorMinSize, branchingFactor, maxDepth);
+            // for (DomTreeObject obj : domTree) {
+            //     dominatorsFOS.write(obj.toCSV().getBytes());
+            // }
+            // dominatorsFOS.close();
 
-            FileOutputStream outboundsFOS = new FileOutputStream(dest + "/outbounds.csv");    
-            ArrayList<Outbounds> outbounds = collectRootOutbounds(heapName, domRoots, maxOutbounds);
-            for (Outbounds ob : outbounds) {
-                outboundsFOS.write(ob.toCSV().getBytes());
-            }
-            outboundsFOS.close();
+            // FileOutputStream outboundsFOS = new FileOutputStream(dest + "/outbounds.csv");    
+            // ArrayList<Outbounds> outbounds = collectRootOutbounds(heapName, domRoots, maxOutbounds);
+            // for (Outbounds ob : outbounds) {
+            //     outboundsFOS.write(ob.toCSV().getBytes());
+            // }
+            // outboundsFOS.close();
 
-            FileOutputStream histogramFOS = new FileOutputStream(dest + "/histogram.csv");
-            ArrayList <ClassHistoInfo> histogram = collectHistogram(heapName, histoMinSize);
-            for (ClassHistoInfo h : histogram) {
-                histogramFOS.write(h.toCSV().getBytes());
-            }
-            histogramFOS.close();
+            // FileOutputStream histogramFOS = new FileOutputStream(dest + "/histogram.csv");
+            // ArrayList <ClassHistoInfo> histogram = collectHistogram(heapName, histoMinSize);
+            // for (ClassHistoInfo h : histogram) {
+            //     histogramFOS.write(h.toCSV().getBytes());
+            // }
+            // histogramFOS.close();
 
             FileOutputStream threadsFOS = new FileOutputStream(dest + "/threads.csv");
             ArrayList<ThreadInfo> threads = collectThreads(heapName, threadMinSize);
@@ -1061,23 +1037,19 @@ public class HeapHubCollectRoutes extends HeapHubBaseRoute{
             }
             threadsFOS.close();
 
-            FileOutputStream stackTraceFOS = new FileOutputStream(dest + "/stacktrace.csv");
-            ArrayList<StackFrame> stackFrames = collectStackTraces(heapName, threads);
-            for (StackFrame sf : stackFrames) {
-                stackTraceFOS.write(sf.toCSV().getBytes());
-            }
-            stackTraceFOS.close();
+            // FileOutputStream stackTraceFOS = new FileOutputStream(dest + "/stacktrace.csv");
+            // ArrayList<StackFrame> stackFrames = collectStackTraces(heapName, threads);
+            // for (StackFrame sf : stackFrames) {
+            //     stackTraceFOS.write(sf.toCSV().getBytes());
+            // }
+            // stackTraceFOS.close();
 
-            FileOutputStream gcRootsFOS = new FileOutputStream(dest + "/gcroots.csv");
-            ArrayList<PathToGCRootElement> gcPaths = collectPathsToGCRoots(heapName, domRoots, gcRootsFOS);
-            for (PathToGCRootElement p : gcPaths) {
-                gcRootsFOS.write(p.toCSV().getBytes());
-            }
-            gcRootsFOS.close();
-
-        } catch (Exception e) {
-            e.printStackTrace();
-        }
+            // FileOutputStream gcRootsFOS = new FileOutputStream(dest + "/gcroots.csv");
+            // ArrayList<PathToGCRootElement> gcPaths = collectPathsToGCRoots(heapName, domRoots, gcRootsFOS);
+            // for (PathToGCRootElement p : gcPaths) {
+            //     gcRootsFOS.write(p.toCSV().getBytes());
+            // }
+            // gcRootsFOS.close();
     }
 
 }

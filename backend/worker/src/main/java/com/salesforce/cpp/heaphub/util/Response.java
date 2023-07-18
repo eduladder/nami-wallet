@@ -1,5 +1,7 @@
 package com.salesforce.cpp.heaphub.util;
 
+import java.io.File;
+import java.io.FileOutputStream;
 import java.io.IOException;
 import java.net.http.HttpRequest;
 
@@ -23,23 +25,38 @@ public class Response {
 
     private JsonObject body;
 
+	String errorsFilePath = "/Users/dbarra/git/heaphub/outputs/errors.txt";
+
+    File errorsFile = new File(errorsFilePath);
+
+    // write text to errorsFile
+    void log(Object o) {
+        try {
+            FileOutputStream fos = new FileOutputStream(errorsFile, true);
+            fos.write((o.toString()+"\n").getBytes());
+            fos.close();
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
+    }
+
     public Response(HttpResponse res) throws ParseException, IOException {
         StatusLine statusLine = res.getStatusLine();
 		statusCode = statusLine.getStatusCode();
         statusPhrase = statusLine.getReasonPhrase();
 		if (statusCode >= 300) {
-			System.out.println("Error Code: " + statusCode + " " + statusLine.getReasonPhrase());
-		String responseBodyString = EntityUtils.toString(res.getEntity());
-		System.out.println(responseBodyString);
+			log("Error Code: " + statusCode + " " + statusLine.getReasonPhrase());
+			String responseBodyString = EntityUtils.toString(res.getEntity());
+			log(responseBodyString);
 			return;
 		}
 		HttpEntity resEntity = res.getEntity();
 	    if (resEntity == null) {
-			System.out.println("Code: " + statusCode + " " + statusLine.getReasonPhrase());
-			System.out.println("Response contains no content");
+			log("Code: " + statusCode + " " + statusLine.getReasonPhrase());
+			log("Response contains no content");
 			return;
 	    }
-		System.out.println("Code: " + statusCode + " " + statusLine.getReasonPhrase());
+		// log("Code: " + statusCode + " " + statusLine.getReasonPhrase());
 	    String responseBodyString = EntityUtils.toString(resEntity);
 //		System.out.println(responseBodyString == "");
 	    // System.out.println(responseBodyString);

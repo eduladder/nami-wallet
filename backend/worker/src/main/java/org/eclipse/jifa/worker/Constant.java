@@ -40,7 +40,7 @@ public interface Constant extends org.eclipse.jifa.common.Constant {
         String SUFFIX_KEY = "suffix";
         String OBJECT_ID_KEY = "objectId";
         String OBJECT_TYPE_KEY = "objectType";
-        String GC_ROOT_KEY = "gcRoot";
+        String GC_ROOT_KEY = "gCRoot";
         String PERCENT_KEY = "percent";
     }
 
@@ -80,11 +80,11 @@ public interface Constant extends org.eclipse.jifa.common.Constant {
         String HAS_INBOUND_KEY = "hasInbound";
         String HAS_OUTBOUND_KEY = "hasOutbound";
         String OBJECT_TYPE_KEY = "objectType";
-        String GC_ROOT_KEY = "gcRoot";        
+        String GC_ROOT_KEY = "gCRoot";        
     }
 
     interface API {
-        String HEAP_DUMP_API_PREFIX = "heap-dump";
+        String HEAP_DUMP_API_PREFIX = "http://localhost:8102/jifa-api/heap-dump";
     }
 
     interface File {
