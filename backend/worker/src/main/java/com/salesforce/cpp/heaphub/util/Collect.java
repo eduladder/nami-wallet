@@ -327,7 +327,7 @@ public class Collect {
         }
 
         public String uploadSQLStatement() {
-            return String.format("INSERT INTO thread_stack (heap_id, thread_name, stack, has_local, first_non_native_frame, created_at) VALUES (%s, %s, %s, %s, %s, %s);", this.getHeapName(), this.getThreadId(), this.getStack(), this.hasLocal(), this.isFirstNonNativeFrame(), this.getCreatedAt());
+            return String.format("INSERT INTO thread_stack (heap_id, thread_id, stack, has_local, first_non_native_frame, created_at) VALUES (%s, %s, %s, %s, %s, %s);", this.getHeapName(), this.getThreadId(), this.getStack(), this.hasLocal(), this.isFirstNonNativeFrame(), this.getCreatedAt());
         }
     }
     
