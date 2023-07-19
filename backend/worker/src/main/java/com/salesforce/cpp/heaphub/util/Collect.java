@@ -73,9 +73,6 @@ public class Collect {
         private long createdAt;
         private String heapId;
         private boolean isDomRoot;
-        // update_at mising
-        // heap_id - missing 
-        // origin - missing - is this equivalent to deciding if root or not?
         // has inbound and has outbound are not present in returned json
         // prefix does not exist
         // private double percent; // not included in the stored information
@@ -131,9 +128,11 @@ public class Collect {
         public long getCreatedAt() {
             return createdAt;
         }
+        
         public String getHeapId() {
             return heapId;
         }
+        
         public boolean isDomRoot() {
             return isDomRoot;
         }
@@ -141,6 +140,11 @@ public class Collect {
         public String toCSV() {
             return String.format("%s,%s,%s,%s,%s,%s,%s,%s,%s,%s, %s,%s,%s\n",
             this.getLabel(), this.getMemLocation(), this.getObjectId(), this.getObjectType(), this.getParentId(), this.getPercent(), this.getRetainedSize(), this.getShallowSize(), this.getSuffix(), this.isGCRoot(), this.createdAt, this.heapId, this.isDomRoot);
+        }
+
+        // percent is not included
+        public String uploadSQLStatement() {
+            return "INSERT INTO dominator_tree (heap_id, object_id, parent_id, object_label, memory_location, origin, suffix, shallow_size, retained_size, object_type, gc_root, created_at) VALUES ("+ heapId + ", " + this.getObjectId() + ", " + parentId + ", " + this.getLabel() + ", " + this.getMemLocation() + ", " + this.isDomRoot + ", " + this.getSuffix() + ", " + this.getShallowSize() + ", " + this.getRetainedSize() + ", " + this.getObjectType() + ", " + this.isGCRoot() + ", " + this.getCreatedAt() + ");";
         }
     }
 
@@ -208,6 +212,9 @@ public class Collect {
             this.getLabel(), this.getMemLocation(), this.getObjectId(), this.getRetainedSize(), this.getShallowSize(), this.getNumberOfObjects(), this.getType(), this.getHeapId(), this.getCreatedAt());
         }
 
+        public String uploadSQLStatement() {
+            return "INSERT INTO histogram (heap_id, object_id, object_label, number_of_objects, object_type, shallow_size, retained_size, created_at VALUES (" + this.getHeapId() + ", " + this.getObjectId() + ", " + this.getLabel() + ", " + this.getNumberOfObjects() + ", " + this.getType() + ", " + this.getShallowSize() + ", " + this.getRetainedSize() + ", " + this.getCreatedAt() + ");";
+        }
     }
 
     class ThreadInfo {
@@ -271,6 +278,10 @@ public class Collect {
             return String.format("%s,%s,%s,%s,%s,%s,%s,%s,%s,%s\n",
             this.getObjectId(), this.getObject(), this.getName(), this.getShallowSize(), this.getRetainedSize(), this.getContextClassLoader(), this.hasStack(), this.isDaemon(), this.getHeapId(), this.getCreatedAt());
         }
+
+        public String uploadSQLStatement() {
+            return String.format("INSERT INTO thread_info (heap_id, object_id, object_label, thread_name, context_class_loader, has_stack, is_daemon, shallow_size, retained_size, created_at) VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s);", heapId, this.getObjectId(), this.getObject(), this.getName(), this.getContextClassLoader(), this.hasStack(), this.isDaemon(), this.getShallowSize(), this.getRetainedSize(), this.getCreatedAt());
+        }
             
     }
 
@@ -313,6 +324,10 @@ public class Collect {
         }
         public boolean isFirstNonNativeFrame() {
             return firstNonNativeFrame;
+        }
+
+        public String uploadSQLStatement() {
+            return String.format("INSERT INTO thread_stack (heap_id, thread_name, stack, has_local, first_non_native_frame, created_at) VALUES (%s, %s, %s, %s, %s, %s);", this.getHeapName(), this.getThreadId(), this.getStack(), this.hasLocal(), this.isFirstNonNativeFrame(), this.getCreatedAt());
         }
     }
     
@@ -391,10 +406,13 @@ public class Collect {
         public String toCSV() {
             return String.format("%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s\n", objectId, prefix, label, suffix, shallowSize, retainedSize, hasInbound, hasOutbound, objectType, gCRoot, sourceId, heapId, createdAt);
         }
+
+        public String uploadSQLStatement() {
+            return String.format("INSERT INTO outbounds (heap_id,source_id, object_id, prefix, label, suffix, shallow_size, retained_size, has_inbound, has_outbound, object_type, gc_root, created_at) VALUES (%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s);", heapId, sourceId, objectId, prefix, label, suffix, shallowSize, retainedSize, hasInbound, hasOutbound, objectType, gCRoot, createdAt);
+        }
     }
     
     class PathToGCRootElement {
-        // absolutely missing...
         private int objectId;
         private int parentId;
         private String label;
@@ -521,6 +539,11 @@ public class Collect {
         public String toCSV() {
             return String.format("%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s\n",
                     parentId, objectId, label, memoryLocation, origin, suffix, prefix, hasInbound, hasOutbound, gCRoot, shallowSize, retainedSize, objectType, heapId, createdAt, sourceId);
+        }
+
+        public String uploadSQLStatement() {
+            return String.format("INSERT INTO path_to_gc_root (heap_id, source_id, parent_id, object_id, label, memory_location, origin, suffix, prefix, has_inbound, has_outbound, gc_root, shallow_size, retained_size, object_type, created_at) VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s);",
+            heapId, sourceId, parentId, objectId, label, memoryLocation, origin, suffix, prefix, hasInbound, hasOutbound, gCRoot, shallowSize, retainedSize, objectType, createdAt);
         }
 
     }
