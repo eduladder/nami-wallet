@@ -67,7 +67,7 @@ public interface Constant extends org.eclipse.jifa.common.Constant {
     interface StackFrame {
         String STACK_NAME_KEY = "stack";
         String HAS_LOCAL_KEY = "hasLocal";
-        String STACK_ID_KEY = "stackId";
+        String FIRST_NON_NATIVE_FRAME_KEY = "firstNonNativeFrame";
     }
 
     interface Outbounds {

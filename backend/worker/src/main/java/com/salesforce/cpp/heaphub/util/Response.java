@@ -8,13 +8,15 @@ import java.net.http.HttpRequest;
 import org.apache.http.HttpEntity;
 import org.apache.http.StatusLine;
 import org.apache.http.util.EntityUtils;
-
+import org.json.JSONArray;
 import org.apache.http.HttpResponse;
 import org.apache.http.ParseException;
 import org.apache.http.client.ClientProtocolException;
 import org.apache.http.client.methods.HttpUriRequest;
 import org.apache.http.impl.client.CloseableHttpClient;
 import org.apache.http.impl.client.HttpClients;
+
+import io.vertx.core.json.JsonArray;
 import io.vertx.core.json.JsonObject;
 
 public class Response {
@@ -25,7 +27,7 @@ public class Response {
 
     private JsonObject body;
 
-	String logFilePath = "/Users/dbarra/git/heaphub/outputs/errors.txt";
+	String logFilePath = "/Users/dbarra/git/heaphub/outputs/log.txt";
 
     File logFile = new File(logFilePath);
 
@@ -58,8 +60,6 @@ public class Response {
 	    }
 		// log("Code: " + statusCode + " " + statusLine.getReasonPhrase());
 	    String responseBodyString = EntityUtils.toString(resEntity);
-//		System.out.println(responseBodyString == "");
-	    // System.out.println(responseBodyString);
 	    body = new JsonObject(responseBodyString);
     }
 

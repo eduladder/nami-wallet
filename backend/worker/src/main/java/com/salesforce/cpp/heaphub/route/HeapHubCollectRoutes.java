@@ -221,28 +221,21 @@ public class HeapHubCollectRoutes extends HeapHubBaseRoute{
 
     class StackFrame {
         // this needs to be distinguished from outbounds
-        // missing first_non_native_frame, created_at, updated_at
-        // what is object_id, object_label, prefix, suffiz, hasinbound, hasoutbound, shallowsize, retainedsize, gcroot
+        // missing created_at, updated_at, thread_id
+        // what is object_id, object_label, prefix, suffiz, hasinbound, hasoutbound, shallowsize, retainedsize, gcroot - is this for outbounds
         private String stack; // done
         private boolean hasLocal; // done
-        private int stackId; // done
-    
-    
-        public StackFrame(String stack, boolean hasLocal, int stackId) {
-            this.stack = stack;
-            this.hasLocal = hasLocal;
-            this.stackId = stackId;
-        }
+        private boolean firstNonNativeFrame; // done
 
         public StackFrame(JsonObject obj) {
             this.stack = obj.getString(Constant.StackFrame.STACK_NAME_KEY);
             this.hasLocal = obj.getBoolean(Constant.StackFrame.HAS_LOCAL_KEY);
-            this.stackId = obj.getInteger(Constant.StackFrame.STACK_ID_KEY);
+            this.firstNonNativeFrame = obj.getBoolean(Constant.StackFrame.FIRST_NON_NATIVE_FRAME_KEY);
         }
         
         public String toCSV() {
             return String.format("%s,%s,%s\n",
-            this.getStack(), this.isHasLocal(), this.getStackId());
+            this.getStack(), this.isHasLocal(), this.isFirstNonNativeFrame());
         }
 
         public String getStack() {
@@ -252,8 +245,8 @@ public class HeapHubCollectRoutes extends HeapHubBaseRoute{
             return hasLocal;
         }
 
-        public int getStackId() {
-            return stackId;
+        public boolean isFirstNonNativeFrame() {
+            return firstNonNativeFrame;
         }
     }
     
@@ -764,7 +757,6 @@ public class HeapHubCollectRoutes extends HeapHubBaseRoute{
                     // TODO: throw exception
                     return null;
                 }
-                log("geThreads: " + jsonArray.size());
                 ArrayList<ThreadInfo> arr = new ArrayList<ThreadInfo>(32);
                 for (int i = 0; i < jsonArray.size(); i++) {
                     JsonObject curr = jsonArray.getJsonObject(i);
@@ -782,9 +774,9 @@ public class HeapHubCollectRoutes extends HeapHubBaseRoute{
                 ArrayList<StackFrame> stacktrace = getStackTrace(heapName, thread.getObjectId());
                 acc.addAll(stacktrace);
             }
-        return acc;
+            return acc;
         } catch (Exception e) {
-        return null;
+            return null;
         }
     }
 
@@ -796,6 +788,7 @@ public class HeapHubCollectRoutes extends HeapHubBaseRoute{
         Response res = new Response(CLIENT_SYNC.execute(getStackTrace));
         if (res.getStatusCode() >= 300) {
             // TODO: throw exception
+            log("req failure");
             return null;
         } else {
             // create json object with res body
@@ -803,8 +796,8 @@ public class HeapHubCollectRoutes extends HeapHubBaseRoute{
                 log("body is null");
                 // TODO: throw exception
                 return null;
-            }                
-            JsonArray jsonArray = new JsonArray(res.getBody().encode());
+            }
+            JsonArray jsonArray = res.getBody().getJsonArray("trace");
             // TODO: update with proper return format
             ArrayList<StackFrame> arr = new ArrayList<StackFrame>(32);
             for (int i = 0; i < jsonArray.size(); i++) {
@@ -815,7 +808,6 @@ public class HeapHubCollectRoutes extends HeapHubBaseRoute{
             }
             return arr;
         }
-
     }
 
     private ArrayList<Outbounds> collectSingleRootOutbounds(String heapName, DomTreeObject root, int max) {
@@ -855,8 +847,8 @@ public class HeapHubCollectRoutes extends HeapHubBaseRoute{
             .addParameter("page", String.valueOf(page))
             .addParameter("pageSize", String.valueOf(pageSize))
             .build();
-            HttpGet getStackTrace = new HttpGet(uri);
-            Response res = new Response(CLIENT_SYNC.execute(getStackTrace));
+            HttpGet getOutbounds = new HttpGet(uri);
+            Response res = new Response(CLIENT_SYNC.execute(getOutbounds));
             if (res.getStatusCode() >= 300) {
                 // TODO
                 return null;
@@ -866,7 +858,6 @@ public class HeapHubCollectRoutes extends HeapHubBaseRoute{
                     // TODO
                     return null;
                 }
-
                 JsonArray jsonArray = resJSON.getJsonArray("data");
                 if (jsonArray == null) {
                     log("resJSON.data is null");
@@ -1000,22 +991,22 @@ public class HeapHubCollectRoutes extends HeapHubBaseRoute{
             logFile.delete();
             logFile.createNewFile();
 
-            // ArrayList<DomTreeObject> domRoots = collectDominatorRoots(heapName, dominatorMinSize);
+            ArrayList<DomTreeObject> domRoots = collectDominatorRoots(heapName, dominatorMinSize);
             
-            // FileOutputStream dominatorsFOS = new FileOutputStream(dest + "/dominators.csv");    
-            // ArrayList<DomTreeObject> domTree = collectDomTree
-            // (heapName, domRoots, dominatorMinSize, branchingFactor, maxDepth);
-            // for (DomTreeObject obj : domTree) {
-            //     dominatorsFOS.write(obj.toCSV().getBytes());
-            // }
-            // dominatorsFOS.close();
+            FileOutputStream dominatorsFOS = new FileOutputStream(dest + "/dominators.csv");    
+            ArrayList<DomTreeObject> domTree = collectDomTree
+            (heapName, domRoots, dominatorMinSize, branchingFactor, maxDepth);
+            for (DomTreeObject obj : domTree) {
+                dominatorsFOS.write(obj.toCSV().getBytes());
+            }
+            dominatorsFOS.close();
 
-            // FileOutputStream outboundsFOS = new FileOutputStream(dest + "/outbounds.csv");    
-            // ArrayList<Outbounds> outbounds = collectRootOutbounds(heapName, domRoots, maxOutbounds);
-            // for (Outbounds ob : outbounds) {
-            //     outboundsFOS.write(ob.toCSV().getBytes());
-            // }
-            // outboundsFOS.close();
+            FileOutputStream outboundsFOS = new FileOutputStream(dest + "/outbounds.csv");    
+            ArrayList<Outbounds> outbounds = collectRootOutbounds(heapName, domRoots, maxOutbounds);
+            for (Outbounds ob : outbounds) {
+                outboundsFOS.write(ob.toCSV().getBytes());
+            }
+            outboundsFOS.close();
 
             // FileOutputStream histogramFOS = new FileOutputStream(dest + "/histogram.csv");
             // ArrayList <ClassHistoInfo> histogram = collectHistogram(heapName, histoMinSize);
@@ -1031,19 +1022,19 @@ public class HeapHubCollectRoutes extends HeapHubBaseRoute{
             }
             threadsFOS.close();
 
-            // FileOutputStream stackTraceFOS = new FileOutputStream(dest + "/stacktrace.csv");
-            // ArrayList<StackFrame> stackFrames = collectStackTraces(heapName, threads);
-            // for (StackFrame sf : stackFrames) {
-            //     stackTraceFOS.write(sf.toCSV().getBytes());
-            // }
-            // stackTraceFOS.close();
+            FileOutputStream stackTraceFOS = new FileOutputStream(dest + "/stacktrace.csv");
+            ArrayList<StackFrame> stackFrames = collectStackTraces(heapName, threads);
+            for (StackFrame sf : stackFrames) {
+                stackTraceFOS.write(sf.toCSV().getBytes());
+            }
+            stackTraceFOS.close();
 
-            // FileOutputStream gcRootsFOS = new FileOutputStream(dest + "/gcroots.csv");
-            // ArrayList<PathToGCRootElement> gcPaths = collectPathsToGCRoots(heapName, domRoots, gcRootsFOS);
-            // for (PathToGCRootElement p : gcPaths) {
-            //     gcRootsFOS.write(p.toCSV().getBytes());
-            // }
-            // gcRootsFOS.close();
+            FileOutputStream gcRootsFOS = new FileOutputStream(dest + "/gcroots.csv");
+            ArrayList<PathToGCRootElement> gcPaths = collectPathsToGCRoots(heapName, domRoots, gcRootsFOS);
+            for (PathToGCRootElement p : gcPaths) {
+                gcRootsFOS.write(p.toCSV().getBytes());
+            }
+            gcRootsFOS.close();
     }
 
 }

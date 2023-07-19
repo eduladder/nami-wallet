@@ -25,6 +25,8 @@ import org.eclipse.jifa.worker.vo.heapdump.HeapObject;
 import org.eclipse.jifa.worker.vo.heapdump.thread.Info;
 import org.eclipse.jifa.worker.vo.heapdump.thread.LocalVariable;
 import org.eclipse.jifa.worker.vo.heapdump.thread.StackFrame;
+import org.eclipse.jifa.worker.vo.heapdump.thread.StackTrace;
+
 import io.vertx.core.Future;
 import org.eclipse.mat.SnapshotException;
 import org.eclipse.mat.inspections.threads.ThreadOverviewQuery;
@@ -124,7 +126,7 @@ class ThreadRoute extends HeapBaseRoute {
     }
 
     @RouteMeta(path = "/stackTrace")
-    void stackTrace(Future<List<StackFrame>> future, @ParamKey("file") String file,
+    void stackTrace(Future<StackTrace> future, @ParamKey("file") String file,
                     @ParamKey("objectId") int objectId) throws Exception {
 
 
@@ -141,9 +143,10 @@ class ThreadRoute extends HeapBaseRoute {
                                          .collect(Collectors.toList());
             res.stream().filter(t -> !t.getStack().contains("Native Method")).findFirst()
                .ifPresent(sf -> sf.setFirstNonNativeFrame(true));
-            future.complete(res);
+            StackTrace trace = new StackTrace(res);
+            future.complete(trace);
         } else {
-            future.complete(Collections.emptyList());
+            future.complete(new StackTrace(Collections.emptyList()));
         }
     }
 
