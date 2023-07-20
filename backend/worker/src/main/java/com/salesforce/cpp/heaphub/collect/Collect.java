@@ -1,8 +1,9 @@
-package com.salesforce.cpp.heaphub.util;
+package com.salesforce.cpp.heaphub.collect;
 
 
 import java.io.File;
 import java.io.FileOutputStream;
+import java.io.FileWriter;
 import java.io.IOException;
 import java.io.PrintWriter;
 import java.io.StringWriter;
@@ -38,6 +39,10 @@ public class Collect {
 
     File logFile = new File(logFilePath);
 
+    PrintWriter printWriter;
+    
+    FileWriter fileWriter;
+
     String heapName;
 
     long analysisTime;
@@ -65,6 +70,14 @@ public class Collect {
         } catch (IOException e) {
             e.printStackTrace();
         }
+    }
+
+    void log(Exception e) throws IOException {
+        if (fileWriter == null) {
+           fileWriter = new FileWriter(logFile, true);
+           printWriter = new PrintWriter(fileWriter);
+        }
+        e.printStackTrace(printWriter);
     }
 
     class DomTreeObject extends BaseRecord {
@@ -142,7 +155,7 @@ public class Collect {
             this.getLabel(), this.getMemLocation(), this.getObjectId(), this.getObjectType(), this.getParentId(), this.getPercent(), this.getRetainedSize(), this.getShallowSize(), this.getSuffix(), this.isGCRoot(), this.createdAt, this.heapId, this.isDomRoot);
         }
 
-        // percent is not included
+        // percent is not included - add it 
         public String uploadSQLStatement() {
             return "INSERT INTO dominator_tree (heap_id, object_id, parent_id, object_label, memory_location, origin, suffix, shallow_size, retained_size, object_type, gc_root, created_at) VALUES ("+ heapId + ", " + this.getObjectId() + ", " + parentId + ", " + this.getLabel() + ", " + this.getMemLocation() + ", " + this.isDomRoot + ", " + this.getSuffix() + ", " + this.getShallowSize() + ", " + this.getRetainedSize() + ", " + this.getObjectType() + ", " + this.isGCRoot() + ", " + this.getCreatedAt() + ");";
         }
@@ -1105,7 +1118,7 @@ public class Collect {
             logFile.delete();
             logFile.createNewFile();
 
-            ArrayList<DomTreeObject> domRoots = collectDominatorRoots( dominatorMinSize);
+            ArrayList<DomTreeObject> domRoots = collectDominatorRoots(dominatorMinSize);
             
             FileOutputStream dominatorsFOS = new FileOutputStream(dest + "/dominators.csv");    
             ArrayList<DomTreeObject> domTree = collectDomTree

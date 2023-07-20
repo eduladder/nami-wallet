@@ -19,7 +19,9 @@ import org.eclipse.jifa.worker.route.ParamKey;
 import org.eclipse.jifa.worker.route.RouteMeta;
 import org.eclipse.jifa.worker.vo.heapdump.dominatortree.BaseRecord;
 
-import com.salesforce.cpp.heaphub.util.Collect;
+import com.salesforce.cpp.heaphub.collect.Collect;
+import com.salesforce.cpp.heaphub.collect.collectors.CollectHeapSummary;
+import com.salesforce.cpp.heaphub.collect.models.HeapSummary;
 import com.salesforce.cpp.heaphub.util.Response;
 
 import org.eclipse.jifa.worker.Constant;
@@ -36,9 +38,16 @@ public class HeapHubCollectRoutes extends HeapHubBaseRoute{
 
     @RouteMeta(path = "/collect", method = HttpMethod.GET)
     void collect(Future<JsonObject> future, RoutingContext context, @ParamKey("file") String file, @ParamKey("dominatorMinSize") long dominatorMinSize, @ParamKey("branchingFactor") int branchingFactor, @ParamKey("maxDepth") int maxDepth, @ParamKey("maxOutbounds") int maxOutbounds, @ParamKey("histoMinSize") long histoMinSize, @ParamKey("threadMinSize") long threadMinSize) throws Exception{
-        String dest = "/Users/dbarra/git/heaphub/outputs";
-        Collect collect = new Collect(file);
-        collect.collectAsCSV(dest, dominatorMinSize, branchingFactor, maxDepth, maxOutbounds, histoMinSize, threadMinSize);
+        logFile.delete();
+        logFile.createNewFile();
+        // String dest = "/Users/dbarra/git/heaphub/outputs";
+        // Collect collect = new Collect(file);
+        // collect.collectAsCSV(dest, dominatorMinSize, branchingFactor, maxDepth, maxOutbounds, histoMinSize, threadMinSize);
+        long currTime = System.currentTimeMillis();
+        CollectHeapSummary hs = new CollectHeapSummary(file, 1, currTime);
+        hs.getHeapId();
+        // hs.collect();
+        
         future.complete(new JsonObject("{\"success\": \"true\"}"));
     }
 

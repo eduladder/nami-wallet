@@ -3,6 +3,7 @@
  */
 package com.salesforce.cpp.heaphub.route;
 
+import java.io.File;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -21,7 +22,8 @@ import io.vertx.ext.web.client.WebClient;
  */
 @MappingPrefix("/heaphub/:file")
 public class HeapHubBaseRoute extends BaseRoute{
-	
+	static String logFilePath = "/Users/dbarra/git/heaphub/outputs/log.txt";
+	static File logFile = new File(logFilePath);
 	private static List<Class<? extends HeapHubBaseRoute>> ROUTES = new ArrayList<>();
 
     static {
