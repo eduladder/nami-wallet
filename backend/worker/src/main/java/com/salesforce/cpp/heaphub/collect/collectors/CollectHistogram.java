@@ -1,5 +1,7 @@
 package com.salesforce.cpp.heaphub.collect.collectors;
 
+import java.io.File;
+import java.io.FileWriter;
 import java.io.IOException;
 import java.net.URI;
 import java.util.ArrayList;
@@ -11,9 +13,12 @@ import org.eclipse.jifa.worker.Constant;
 import com.salesforce.cpp.heaphub.collect.models.ClassHistoInfo;
 import com.salesforce.cpp.heaphub.common.HeapHubDatabaseManager;
 import com.salesforce.cpp.heaphub.util.Response;
+import com.salesforce.cpp.heaphub.common.Common;
 
 import io.vertx.core.json.JsonArray;
 import io.vertx.core.json.JsonObject;
+import com.opencsv.CSVWriter;
+
 
 public class CollectHistogram extends CollectBase {
     String heapName;
@@ -99,6 +104,20 @@ public class CollectHistogram extends CollectBase {
         for (ClassHistoInfo chi : arr) {
                 driver.executeUpdate(chi.uploadSQLStatement());
         }
+    }
+
+
+    public void collectCSVAndUpload() throws IOException {
+        File file = new File(Common.csvDestination + "/histogram.csv");
+        FileWriter outputfile = new FileWriter(file);
+        CSVWriter writer = new CSVWriter(outputfile);
+        ArrayList<ClassHistoInfo> arr = collectHistogram(minSize);
+        writer.writeNext(ClassHistoInfo.getCSVHeader());
+        for (ClassHistoInfo chi : arr) {
+            writer.writeNext(chi.getCSVArray());
+        }
+        driver.executeUpdate(ClassHistoInfo.uploadCSV(file.getAbsolutePath()));
+        file.delete();
     }
     
 }

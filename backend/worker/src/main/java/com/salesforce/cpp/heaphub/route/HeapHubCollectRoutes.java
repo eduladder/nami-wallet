@@ -55,13 +55,14 @@ public class HeapHubCollectRoutes extends HeapHubBaseRoute{
         // int heapId = hs.collect();
         // CollectDomTree cdt = new CollectDomTree(file, 5, currTime, 50*1000*1000, 10, 2);
         //  ArrayList<DomTreeObject> roots = cdt.uploadToSQL();
-        // CollectHistogram ch = new CollectHistogram(file, 5, currTime, 150*1000*1000);
+        CollectHistogram ch = new CollectHistogram(file, 5, currTime, 150*1000*1000);
         // ch.collectAndUpload();
-        CollectThreads ct = new CollectThreads(file, 5, currTime, threadMinSize);
-        ct.collectAndUpload();
-        ArrayList<ThreadIds> threadIds = ct.getThreadIds();
-        CollectThreadStack cts = new CollectThreadStack(file, 5, currTime, threadIds);
-        cts.collectAndUpload();
+        // CollectThreads ct = new CollectThreads(file, 5, currTime, threadMinSize);
+        // ct.collectAndUpload();
+        // ArrayList<ThreadIds> threadIds = ct.getThreadIds();
+        // CollectThreadStack cts = new CollectThreadStack(file, 5, currTime, threadIds);
+        // cts.collectAndUpload();
+        ch.collectCSVAndUpload();
         future.complete(new JsonObject("{\"success\": \"true\"}"));
     }
 

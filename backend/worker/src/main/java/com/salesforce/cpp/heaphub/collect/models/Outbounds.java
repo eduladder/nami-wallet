@@ -15,10 +15,10 @@ public class Outbounds {
         private int objectType;
         private boolean gCRoot;
         private int sourceId; 
-        private String heapId;
+        private int heapId;
         private long createdAt;
 
-        public Outbounds(JsonObject obj, int sourceId, String heapName, long analysisTime) {
+        public Outbounds(JsonObject obj, int sourceId, int heapId, long analysisTime) {
             this.objectId = obj.getInteger(Constant.Outbounds.OBJECT_ID_KEY);
             this.prefix = obj.getString(Constant.Outbounds.PREFIX_KEY);
             this.label = obj.getString(Constant.Outbounds.LABEL_KEY);
@@ -30,7 +30,7 @@ public class Outbounds {
             this.objectType = obj.getInteger(Constant.Outbounds.OBJECT_TYPE_KEY);
             this.gCRoot = obj.getBoolean(Constant.Outbounds.GC_ROOT_KEY);
             this.sourceId = sourceId;
-            this.heapId = heapName;
+            this.heapId = heapId;
             this.createdAt = analysisTime;
         }
 
@@ -68,7 +68,7 @@ public class Outbounds {
         public int getSourceId() {
             return sourceId;
         }
-        public String getHeapId() {
+        public int getHeapId() {
             return heapId;
         }
         public long getCreatedAt() {

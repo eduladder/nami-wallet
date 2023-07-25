@@ -65,4 +65,36 @@ public class ClassHistoInfo {
         
         }
 
+        static public String[] getCSVHeader() {
+            return new String[] {
+                    "heap_id",
+                    "object_id",
+                    "object_label",
+                    "number_of_objects",
+                    "object_type",
+                    "shallow_size",
+                    "retained_size",
+                    "created_at",
+                    "updated_at"
+            };
+        }
+
+        static public String uploadCSV(String path) {
+            return String.format("COPY histogram (heap_id, object_id, object_label, number_of_objects, object_type, shallow_size, retained_size, created_at, updated_at) FROM '%s' DELIMITER ',' CSV HEADER", path);
+        }
+
+        public String[] getCSVArray() {
+            return new String[] {
+                    String.valueOf(heapId),
+                    String.valueOf(objectId),
+                    label,
+                    String.valueOf(numberOfObjects),
+                    String.valueOf(type),
+                    String.valueOf(shallowSize),
+                    String.valueOf(retainedSize),
+                    String.format("to_timestamp(%s)", createdAt/1000),
+                    String.format("to_timestamp(%s)", createdAt/1000),
+            };
+        }
+
 }

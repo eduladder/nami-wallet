@@ -6,7 +6,7 @@ import io.vertx.core.json.JsonObject;
 
 public class GCRootPath {
             
-    public class PathToGCRootElement {
+    static public class PathToGCRootElement {
         private int objectId;
         private int parentId;
         private String label;
@@ -20,11 +20,12 @@ public class GCRootPath {
         private boolean hasOutbound;
         private int objectType;
         private boolean gCRoot;
-        private String heapId;
         private long createdAt;
         private int sourceId;
+        private int heapId;
 
-        public PathToGCRootElement(JsonObject obj, int parentId, int sourceId, String heapName, long analysisTime) {
+
+        public PathToGCRootElement(JsonObject obj, int parentId, int sourceId, int heapId, long analysisTime) {
             if (obj.getString("suffix") == null) {
                 suffix = "";
             } else {
@@ -63,7 +64,7 @@ public class GCRootPath {
             objectType = obj.getInteger("objectType");
             this.sourceId = sourceId;
             createdAt = analysisTime;
-            heapId = heapName;
+            this.heapId = heapId;
         }
         
         public int getObjectId() {
@@ -118,7 +119,7 @@ public class GCRootPath {
             return objectType;
         }
         
-        public String heapId() {
+        public int heapId() {
             return heapId;
         }
 

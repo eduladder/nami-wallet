@@ -5,6 +5,7 @@ import java.io.FileOutputStream;
 import java.io.FileWriter;
 import java.io.IOException;
 import java.io.PrintWriter;
+import java.io.StringWriter;
 
 import org.apache.http.impl.client.CloseableHttpClient;
 import org.apache.http.impl.client.HttpClients;
@@ -15,8 +16,8 @@ public class CollectBase {
         // synchronous client
         static CloseableHttpClient CLIENT_SYNC = HttpClients.createDefault();
         
+        static StringWriter sw;
         static PrintWriter printWriter;
-        static FileWriter fileWriter;
         // logger to write to log.txt file
         static String logFilePath = "/Users/dbarra/git/heaphub/outputs/log.txt";
         static File logFile = new File(logFilePath);
@@ -31,11 +32,13 @@ public class CollectBase {
         }
 
         static void log(Exception e) throws IOException {
-            if (fileWriter == null) {
-            fileWriter = new FileWriter(logFile, true);
-            printWriter = new PrintWriter(fileWriter);
+            if (sw == null) {
+            StringWriter sw = new StringWriter();
+            printWriter = new PrintWriter(sw);
             }
             e.printStackTrace(printWriter);
+            log(sw.toString());
+            sw.flush();
         }
 
         static HeapHubDatabaseManager driver = HeapHubDatabaseManager.getInstance();

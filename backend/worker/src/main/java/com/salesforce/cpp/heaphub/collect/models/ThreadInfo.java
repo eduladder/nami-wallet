@@ -68,6 +68,42 @@ public class ThreadInfo {
         public static String getIds(int heapId) {
             return String.format("SELECT thread_info_id, object_id FROM thread_info WHERE heap_id = %s;", heapId);
         }
-            
+
+        public String[] getCSVArray() {
+            return new String[] { 
+                    String.valueOf(this.getHeapId()),
+                    String.valueOf(this.getObjectId()),
+                    this.getObjectLabel(),
+                    this.getThreadName(),
+                    this.getContextClassLoader(),
+                    String.valueOf(this.hasStack()),
+                    String.valueOf(this.isDaemon()),
+                    String.valueOf(this.getShallowSize()),
+                    String.valueOf(this.getRetainedSize()),
+                    String.format("to_timestamp(%s)", this.getCreatedAt()/1000),
+                    String.format("to_timestamp(%s)", this.getCreatedAt()/1000)
+            };
+        }
+
+        public static String[] getCSVHeader() {
+            return new String[] {
+                    "heap_id",
+                    "object_id",
+                    "object_label",
+                    "thread_name",
+                    "context_class_loader",
+                    "has_stack",
+                    "is_daemon",
+                    "shallow_size",
+                    "retained_size",
+                    "created_at",
+                    "updated_at"
+            };
+        }
+
+        public static String uploadCSV(String path) {
+            return String.format("COPY thread_info (thread_info (heap_id, object_id, object_label, thread_name, context_class_loader, has_stack, is_daemon, shallow_size, retained_size, created_at, updated_at) FROM '%s' DELIMITERS ',' CSV HEADER;", path);
+        }
+
     }
 
