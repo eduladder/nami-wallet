@@ -90,7 +90,7 @@ public class HeapHubDatabaseManager {
 			PreparedStatement preparedStatement = connection.prepareStatement(sql);
 			preparedStatement.executeUpdate();
 		} catch (SQLException e) {
-			log("here");
+			log("sql: " + sql);
 			log(e.getMessage());
 		}
 	}

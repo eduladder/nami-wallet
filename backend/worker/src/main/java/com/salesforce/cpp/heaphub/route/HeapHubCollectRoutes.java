@@ -20,8 +20,15 @@ import org.eclipse.jifa.worker.route.RouteMeta;
 import org.eclipse.jifa.worker.vo.heapdump.dominatortree.BaseRecord;
 
 import com.salesforce.cpp.heaphub.collect.Collect;
+import com.salesforce.cpp.heaphub.collect.collectors.CollectDomTree;
 import com.salesforce.cpp.heaphub.collect.collectors.CollectHeapSummary;
+import com.salesforce.cpp.heaphub.collect.collectors.CollectHistogram;
+import com.salesforce.cpp.heaphub.collect.collectors.CollectThreadStack;
+import com.salesforce.cpp.heaphub.collect.collectors.CollectThreads;
+import com.salesforce.cpp.heaphub.collect.models.DomTreeObject;
 import com.salesforce.cpp.heaphub.collect.models.HeapSummary;
+import com.salesforce.cpp.heaphub.collect.models.ThreadIds;
+import com.salesforce.cpp.heaphub.collect.models.ThreadInfo;
 import com.salesforce.cpp.heaphub.util.Response;
 
 import org.eclipse.jifa.worker.Constant;
@@ -44,10 +51,17 @@ public class HeapHubCollectRoutes extends HeapHubBaseRoute{
         // Collect collect = new Collect(file);
         // collect.collectAsCSV(dest, dominatorMinSize, branchingFactor, maxDepth, maxOutbounds, histoMinSize, threadMinSize);
         long currTime = System.currentTimeMillis();
-        CollectHeapSummary hs = new CollectHeapSummary(file, 1, currTime);
-        hs.getHeapId();
-        // hs.collect();
-        
+        // CollectHeapSummary hs = new CollectHeapSummary(file, currTime);
+        // int heapId = hs.collect();
+        // CollectDomTree cdt = new CollectDomTree(file, 5, currTime, 50*1000*1000, 10, 2);
+        //  ArrayList<DomTreeObject> roots = cdt.uploadToSQL();
+        // CollectHistogram ch = new CollectHistogram(file, 5, currTime, 150*1000*1000);
+        // ch.collectAndUpload();
+        CollectThreads ct = new CollectThreads(file, 5, currTime, threadMinSize);
+        ct.collectAndUpload();
+        ArrayList<ThreadIds> threadIds = ct.getThreadIds();
+        CollectThreadStack cts = new CollectThreadStack(file, 5, currTime, threadIds);
+        cts.collectAndUpload();
         future.complete(new JsonObject("{\"success\": \"true\"}"));
     }
 

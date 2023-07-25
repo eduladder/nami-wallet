@@ -9,6 +9,8 @@ import java.io.PrintWriter;
 import org.apache.http.impl.client.CloseableHttpClient;
 import org.apache.http.impl.client.HttpClients;
 
+import com.salesforce.cpp.heaphub.common.HeapHubDatabaseManager;
+
 public class CollectBase {
         // synchronous client
         static CloseableHttpClient CLIENT_SYNC = HttpClients.createDefault();
@@ -35,5 +37,7 @@ public class CollectBase {
             }
             e.printStackTrace(printWriter);
         }
+
+        static HeapHubDatabaseManager driver = HeapHubDatabaseManager.getInstance();
 
 }

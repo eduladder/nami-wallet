@@ -79,6 +79,19 @@ public interface Constant extends org.eclipse.jifa.common.Constant {
         String FIRST_NON_NATIVE_FRAME_KEY = "firstNonNativeFrame";
     }
 
+    interface Locals {
+        String OBJECT_ID_KEY = "objectId";
+        String PREFIX_KEY = "prefix";
+        String LABEL_KEY = "label";
+        String SUFFIX_KEY = "suffix";
+        String SHALLOW_SIZE_KEY = "shallowSize";
+        String RETAINED_SIZE_KEY = "retainedSize";
+        String HAS_INBOUND_KEY = "hasInbound";
+        String HAS_OUTBOUND_KEY = "hasOutbound";
+        String OBJECT_TYPE_KEY = "objectType";
+        String GC_ROOT_KEY = "gCRoot";
+    }
+
     interface Outbounds {
         String OBJECT_ID_KEY = "objectId";
         String PREFIX_KEY = "prefix";

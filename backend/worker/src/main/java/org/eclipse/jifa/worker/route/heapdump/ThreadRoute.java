@@ -24,6 +24,7 @@ import org.eclipse.jifa.worker.support.heapdump.HeapDumpSupport;
 import org.eclipse.jifa.worker.vo.heapdump.HeapObject;
 import org.eclipse.jifa.worker.vo.heapdump.thread.Info;
 import org.eclipse.jifa.worker.vo.heapdump.thread.LocalVariable;
+import org.eclipse.jifa.worker.vo.heapdump.thread.LocalVariables;
 import org.eclipse.jifa.worker.vo.heapdump.thread.StackFrame;
 import org.eclipse.jifa.worker.vo.heapdump.thread.StackTrace;
 
@@ -151,7 +152,7 @@ class ThreadRoute extends HeapBaseRoute {
     }
 
     @RouteMeta(path = "/locals")
-    void locals(Future<List<LocalVariable>> future, @ParamKey("file") String file, @ParamKey("objectId") int objectId,
+    void locals(Future<LocalVariables> future, @ParamKey("file") String file, @ParamKey("objectId") int objectId,
                 @ParamKey("depth") int depth,
                 @ParamKey("firstNonNativeFrame") boolean firstNonNativeFrame) throws Exception {
         ISnapshot snapshot = Analyzer.getOrOpenSnapshotContext(file).getSnapshot();
@@ -163,7 +164,7 @@ class ThreadRoute extends HeapBaseRoute {
             Object frame = frames.get(depth - 1);
             if (result.hasChildren(frame)) {
                 List<?> locals = result.getChildren(frame);
-                future.complete(locals.stream().map(local -> {
+                future.complete(new LocalVariables(locals.stream().map(local -> {
                     int id = result.getContext(local).getObjectId();
                     LocalVariable var = new LocalVariable();
                     var.setObjectId(id);
@@ -193,10 +194,10 @@ class ThreadRoute extends HeapBaseRoute {
                     } catch (SnapshotException e) {
                         throw new JifaException(e);
                     }
-                }).collect(Collectors.toList()));
+                }).collect(Collectors.toList())));
                 return;
             }
         }
-        future.complete(Collections.emptyList());
+        future.complete(new LocalVariables(Collections.emptyList()));
     }
 }

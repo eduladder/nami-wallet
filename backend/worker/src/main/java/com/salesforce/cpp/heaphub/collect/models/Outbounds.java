@@ -4,7 +4,6 @@ import io.vertx.core.json.JsonObject;
 import org.eclipse.jifa.worker.Constant;
 
 public class Outbounds {
-        // needs to be distinguished from stack frame
         private int objectId;
         private String prefix;
         private String label;
@@ -15,7 +14,7 @@ public class Outbounds {
         private boolean hasOutbound;
         private int objectType;
         private boolean gCRoot;
-        private int sourceId; // currently not being included
+        private int sourceId; 
         private String heapId;
         private long createdAt;
 

@@ -18,11 +18,9 @@ import io.vertx.core.json.JsonObject;
 public class CollectHeapSummary extends CollectBase {
 
     String heapName;
-    int heapId;
     long createdAt;
 
-    public CollectHeapSummary (String heapName, int heapId, long createdAt) {
-        this.heapId = heapId;
+    public CollectHeapSummary (String heapName, long createdAt) {
         this.heapName = heapName;
         this.createdAt = createdAt;
     }
@@ -61,15 +59,11 @@ public class CollectHeapSummary extends CollectBase {
         return out;
     }
 
-    public void collect() throws ClientProtocolException, IOException {
+    public int collect() throws ClientProtocolException, IOException {
         HeapSummary hs = getHeapDetails();
-        HeapHubDatabaseManager.getInstance().executeUpdate(hs.uploadSQLStatement());
-    }
-    public int getHeapId() throws ClientProtocolException, IOException {
-        HeapSummary hs = getHeapDetails();
-        JSONArray data = HeapHubDatabaseManager.getInstance().executeSelect(hs.getHeapIdSQL());
+        driver.executeUpdate(hs.uploadSQLStatement());
+        JSONArray data = driver.executeSelect(hs.getHeapIdSQL());
         int out = data.getJSONObject(0).getInt("heap_id");
-        log (out);
         return out;
     }
 

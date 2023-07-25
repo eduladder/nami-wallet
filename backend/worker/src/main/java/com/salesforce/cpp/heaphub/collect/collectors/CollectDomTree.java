@@ -27,10 +27,13 @@ public class CollectDomTree extends CollectBase {
     int branchingFactor;
     int maxDepth;
 
-    public CollectDomTree(String heapName, int heapId, long createdAt) {
+    public CollectDomTree(String heapName, int heapId, long createdAt, long minSize, int branchingFactor, int maxDepth) {
         this.heapName = heapName;
         this.heapId = heapId;
         this.createdAt = createdAt;
+        this.minSize = minSize;
+        this.branchingFactor = branchingFactor;
+        this.maxDepth = maxDepth;
     }
 
     public ArrayList<DomTreeObject> collectDominatorRoots(long minSize) {
@@ -217,11 +220,13 @@ public  ArrayList<DomTreeObject> addChildren( ArrayList<DomTreeObject> roots, lo
         return domTree;
     }
 
-    public void uploadToSQL() throws IOException {
-       ArrayList<DomTreeObject> domTree = collect();
+    public ArrayList<DomTreeObject> uploadToSQL() throws IOException {
+        ArrayList<DomTreeObject> domRoots = collectDominatorRoots(minSize);
+        ArrayList<DomTreeObject> domTree = addChildren (domRoots, minSize, branchingFactor, maxDepth);
        for (DomTreeObject obj : domTree) {
-            HeapHubDatabaseManager.getInstance().executeUpdate(obj.uploadSQLStatement());
+            driver.executeUpdate(obj.uploadSQLStatement());
        } 
+       return domRoots;
     }
 
 }

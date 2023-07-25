@@ -35,12 +35,12 @@ public class DomTreeObject {
             retainedSize = (obj.getLong(Constant.DomTree.RETAINED_SIZE_KEY));
             shallowSize = (obj.getLong(Constant.DomTree.SHALLOW_SIZE_KEY));
             suffix = (obj.getString(Constant.DomTree.SUFFIX_KEY));
-            String label = obj.getString(Constant.DomTree.LABEL_KEY);
-            String[] splitLabel = label.split("@ ");
+            String collectedLabel = obj.getString(Constant.DomTree.LABEL_KEY);
+            String[] splitLabel = collectedLabel.split("@ ");
             if (splitLabel.length != 2) {
-                throw new IllegalArgumentException("Invalid label: " + label);
+                throw new IllegalArgumentException("Invalid label: " + collectedLabel);
             }
-            label = (splitLabel[0]);
+            this.label = (splitLabel[0]);
             this.setMemLocation(splitLabel[1]);
         }
 
@@ -119,7 +119,7 @@ public class DomTreeObject {
 
         // percent is not included - add it 
         public String uploadSQLStatement() {
-            return "INSERT INTO dominator_tree (heap_id, object_id, parent_id, object_label, memory_location, origin, suffix, shallow_size, retained_size, object_type, gc_root, created_at, updated_at, prefix, has_inbound, has_outbound) VALUES ("+ heapId + ", " + this.getObjectId() + ", " + parentId + ", " + this.getLabel() + ", " + this.getMemLocation() + ", " + this.isDomRoot + ", " + this.getSuffix() + ", " + this.getShallowSize() + ", " + this.getRetainedSize() + ", " + this.getObjectType() + ", " + this.isGCRoot() + ", " + this.getCreatedAt() + ", " + this.getCreatedAt() + ", NULL, NULL, NULL);";
+            return "INSERT INTO dominator_tree (heap_id, object_id, parent_id, object_label, memory_location, origin, suffix, shallow_size, retained_size, object_type, gc_root, created_at, updated_at, prefix, has_inbound, has_outbound) VALUES ("+ heapId + ", " + this.getObjectId() + ", " + parentId + ", $TAG_24121$" + this.getLabel() + "$TAG_24121$, $TAG_24121$" + this.getMemLocation() + "$TAG_24121$, " + this.isDomRoot + ", $TAG_24121$" + this.getSuffix() + "$TAG_24121$, " + this.getShallowSize() + ", " + this.getRetainedSize() + ", " + this.getObjectType() + ", " + this.isGCRoot() + ", to_timestamp(" + this.getCreatedAt()/1000 + "), to_timestamp(" + this.getCreatedAt()/1000 + "), NULL, NULL, NULL);";
         }
 
 }
