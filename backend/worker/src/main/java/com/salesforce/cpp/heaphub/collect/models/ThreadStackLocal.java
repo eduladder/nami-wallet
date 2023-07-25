@@ -185,11 +185,12 @@ public class ThreadStackLocal {
     }
 
     public String uploadSQLStatement() {
-        return String.format("INSERT INTO thread_stack (thread_info_id, stack, has_local, first_non_native_frame, object_id, object_label, prefix, suffix, has_inbound, has_outbound, retained_size, shallow_size, gc_root, created_at, updated_at) VALUES (%s, $HEAPHUB_ESC_TAG$%s$HEAPHUB_ESC_TAG$, %s, %s, %s, $HEAPHUB_ESC_TAG$%s$HEAPHUB_ESC_TAG$, $HEAPHUB_ESC_TAG$%s$HEAPHUB_ESC_TAG$, $HEAPHUB_ESC_TAG$%s$HEAPHUB_ESC_TAG$, %s, %s, %s, %s, %s, to_timestamp(%s), to_timestamp(%s));", this.getThreadInfoId(), this.getStack(), this.hasLocal(), this.isFirstNonNativeFrame(), this.getObjectId(), this.getObjectLabel(), this.getPrefix(), this.getSuffix(), this.hasInbound(), this.hasOutbound(), this.getRetainedSize(), this.getShallowSize(), this.isGCRoot(), this.createdAt/1000, this.createdAt/1000).replaceAll("null", "NULL");
+        return String.format("INSERT INTO thread_stack (heap_id,thread_info_id, stack, has_local, first_non_native_frame, object_id, object_label, prefix, suffix, has_inbound, has_outbound, retained_size, shallow_size, gc_root, created_at, updated_at) VALUES (%s, %s, $HEAPHUB_ESC_TAG$%s$HEAPHUB_ESC_TAG$, %s, %s, %s, $HEAPHUB_ESC_TAG$%s$HEAPHUB_ESC_TAG$, $HEAPHUB_ESC_TAG$%s$HEAPHUB_ESC_TAG$, $HEAPHUB_ESC_TAG$%s$HEAPHUB_ESC_TAG$, %s, %s, %s, %s, %s, to_timestamp(%s), to_timestamp(%s));", heapId, this.getThreadInfoId(), this.getStack(), this.hasLocal(), this.isFirstNonNativeFrame(), this.getObjectId(), this.getObjectLabel(), this.getPrefix(), this.getSuffix(), this.hasInbound(), this.hasOutbound(), this.getRetainedSize(), this.getShallowSize(), this.isGCRoot(), this.createdAt/1000, this.createdAt/1000).replaceAll("null", "NULL");
     }
 
     public String[] getCSVArray() {
         return new String[] {
+            String.valueOf(heapId),
             String.valueOf(this.getThreadInfoId()),
             this.getStack(),
             String.valueOf(this.hasLocal()),
@@ -210,6 +211,7 @@ public class ThreadStackLocal {
 
     public static String[] getCSVHeader() {
         return new String[]{
+                "heap_id",
                 "thread_info_id",
                 "stack",
                 "has_local",
@@ -229,7 +231,7 @@ public class ThreadStackLocal {
     }
 
     public static String uploadCSV(String path) {
-        return String.format("COPY thread_stack (thread_info_id, stack, has_local, first_non_native_frame, object_id, object_label, prefix, suffix, has_inbound, has_outbound, retained_size, shallow_size, gc_root, created_at, updated_at) FROM '%s' DELIMITER ',' CSV HEADER", path);
+        return String.format("COPY thread_stack (heap_id,thread_info_id, stack, has_local, first_non_native_frame, object_id, object_label, prefix, suffix, has_inbound, has_outbound, retained_size, shallow_size, gc_root, created_at, updated_at) FROM '%s' DELIMITER ',' CSV HEADER", path);
     }
     
 }

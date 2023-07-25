@@ -137,8 +137,56 @@ public class GCRootPath {
         }
 
         public String uploadSQLStatement() {
-            return String.format("INSERT INTO path_to_gc_root (heap_id, source_id, parent_id, object_id, label, memory_location, origin, suffix, prefix, has_inbound, has_outbound, gc_root, shallow_size, retained_size, object_type, created_at) VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s);",
-            heapId, sourceId, parentId, objectId, label, memoryLocation, origin, suffix, prefix, hasInbound, hasOutbound, gCRoot, shallowSize, retainedSize, objectType, createdAt);
+            return String.format("INSERT INTO path_to_gc_root (heap_id, source_id, parent_id, object_id, label, memory_location, origin, suffix, prefix, has_inbound, has_outbound, gc_root, shallow_size, retained_size, object_type, created_at, updated_at) VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, to_timestamp(%s), to_timestamp(%s));",
+            heapId, sourceId, parentId, objectId, label, memoryLocation, origin, suffix, prefix, hasInbound, hasOutbound, gCRoot, shallowSize, retainedSize, objectType, createdAt/1000, createdAt/1000);
+        }
+
+        public String[] getCSVArray() {
+            return new String[] {
+                String.valueOf(heapId),
+                String.valueOf(sourceId),
+                String.valueOf(parentId),
+                String.valueOf(objectId),
+                label,
+                memoryLocation,
+                String.valueOf(origin),
+                suffix,
+                prefix,
+                String.valueOf(hasInbound),
+                String.valueOf(hasOutbound),
+                String.valueOf(gCRoot),
+                String.valueOf(shallowSize),
+                String.valueOf(retainedSize),
+                String.valueOf(objectType),
+                String.format("to_timestamp(%s)", createdAt/1000),
+                String.format("to_timestamp(%s)", createdAt/1000),
+            };
+        }
+
+        public static String[] getCSVHeader() {
+            return new String[] {
+                "heap_id",
+                "source_id",
+                "parent_id",
+                "object_id",
+                "label",
+                "memory_location",
+                "origin",
+                "suffix",
+                "prefix",
+                "has_inbound",
+                "has_outbound",
+                "gc_root",
+                "shallow_size",
+                "retained_size",
+                "object_type",
+                "created_at",
+                "updated_at",
+            };
+        }
+
+        public static String uploadCSV(String path) {
+            return String.format("COPY path_to_gc_root (heap_id, source_id, parent_id, object_id, label, memory_location, origin, suffix, prefix, has_inbound, has_outbound, gc_root, shallow_size, retained_size, object_type, created_at, updated_at) FROM '%s' DELIMITER ',' CSV HEADER", path);
         }
 
     }
