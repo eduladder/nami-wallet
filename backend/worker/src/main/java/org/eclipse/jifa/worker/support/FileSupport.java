@@ -43,10 +43,20 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
+import java.util.zip.GZIPInputStream;
+
+import javax.net.ssl.HttpsURLConnection;
+import javax.net.ssl.SSLContext;
+import javax.net.ssl.TrustManager;
+import javax.net.ssl.X509TrustManager;
 
 import static org.eclipse.jifa.common.util.Assertion.ASSERT;
 import static org.eclipse.jifa.common.util.GsonHolder.GSON;
 import static org.eclipse.jifa.worker.Constant.File.INFO_FILE_SUFFIX;
+
+import javax.net.ssl.X509TrustManager;
+import java.security.cert.CertificateException;
+import java.security.cert.X509Certificate;
 
 public class FileSupport {
 
@@ -311,13 +321,74 @@ public class FileSupport {
         }
     }
 
-    public static void transferByURL(String url, FileType fileType, String fileName, TransferListener listener,
+    static class AcceptAllTrustManager implements X509TrustManager {
+    @Override
+        public void checkClientTrusted(X509Certificate[] chain, String authType) throws CertificateException {
+            // Accept all client certificates without validation
+        }
+
+        @Override
+        public void checkServerTrusted(X509Certificate[] chain, String authType) throws CertificateException {
+            // Accept all server certificates without validation
+        }
+
+        @Override
+        public X509Certificate[] getAcceptedIssuers() {
+            return new X509Certificate[0];
+        }
+    }
+
+    public static void transferByURLGZIP(HttpsURLConnection conn, FileType fileType, String fileName, String originalName, TransferListener listener,
                                      Future<TransferringFile> future) {
         InputStream in = null;
         OutputStream out = null;
         String filePath = FileSupport.filePath(fileType, fileName);
         try {
-            URLConnection conn = new URL(url).openConnection();
+            listener.updateState(ProgressState.IN_PROGRESS);
+            future.complete(new TransferringFile(fileName, originalName));
+            listener.setTotalSize(conn.getContentLength());
+            in = new GZIPInputStream(conn.getInputStream());
+            out = new FileOutputStream(filePath);
+            byte[] buffer = new byte[8192];
+            int length;
+            while ((length = in.read(buffer)) > 0) {
+                out.write(buffer, 0, length);
+                listener.addTransferredSize(length);
+            }
+            listener.updateState(ProgressState.SUCCESS);
+        } catch (Exception e) {
+            LOGGER.error("URL transfer failed");
+            handleTransferError(fileName, listener, future, e);
+        } finally {
+            try {
+                if (in != null) {
+                    in.close();
+                }
+                if (out != null) {
+                    out.close();
+                }
+            } catch (IOException e) {
+                LOGGER.error("Close stream failed", e);
+            }
+        }
+    }
+
+
+        public static void transferByURL(String url, FileType fileType, String fileName, TransferListener listener,
+                                     Future<TransferringFile> future) {
+        InputStream in = null;
+        OutputStream out = null;
+        String filePath = FileSupport.filePath(fileType, fileName);
+        try {
+        
+            // Create an SSLContext with the custom TrustManager
+            SSLContext sslContext = SSLContext.getInstance("TLS");
+            sslContext.init(null, new TrustManager[] { new AcceptAllTrustManager() }, null);
+
+            // Set the custom SSLContext on the HttpsURLConnection
+            HttpsURLConnection.setDefaultSSLSocketFactory(sslContext.getSocketFactory());
+
+            HttpsURLConnection conn = (HttpsURLConnection) new URL(url).openConnection();
             listener.updateState(ProgressState.IN_PROGRESS);
             future.complete(new TransferringFile(fileName));
             listener.setTotalSize(conn.getContentLength());
@@ -346,6 +417,7 @@ public class FileSupport {
             }
         }
     }
+
 
     public static void transferByOSS(String endpoint, String accessKeyId, String accessKeySecret, String bucketName,
                                      String objectName, FileType fileType, String fileName,

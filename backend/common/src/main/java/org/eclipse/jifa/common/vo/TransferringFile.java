@@ -18,8 +18,14 @@ import lombok.Data;
 public class TransferringFile {
 
     private String name;
+    private String originalName;
 
     public TransferringFile(String fileName) {
         this.name = fileName;
+    }
+
+    public TransferringFile(String fileName, String originalName) {
+        this.name = fileName;
+        this.originalName = originalName;
     }
 }

@@ -5,26 +5,29 @@ import org.eclipse.jifa.worker.Constant;
 import com.google.gson.JsonObject;
 
 public class HeapSummary {
-    String name;
-    String generatedName;
-    Integer heapId;
-    Long usedHeapSize;
-    Long classCount;
-    Long objectCount;
-    Long classLoaderCount;
-    Long gcRootCount;
-    String osBit;
-    String pod;
-    String hostName;
-    Long heapCreationDate;
-    Long createdAt;
+    String name; // given
+    String generatedName; // given
+    Long usedHeapSize; // request response
+    Long classCount; // req response
+    Long objectCount; // req response
+    Long classLoaderCount; // req response
+    Long gcRootCount; // req response
+    String osBit; // unclear how to retrieve
+    String pod; // retrieve from name
+    String hostName; // retrieve from name
+    Long heapCreationDate; // retrieve from URL and then send with upload api
+    Long createdAt; // given
     Long updatedAt;
     String jvmParameters;
 
-    public HeapSummary(String name, String generatedName, int heapId, long usedHeapSize, long classCount, long objectCount, long classLoaderCount, long gcRootCount, String osBit, String pod, String hostName, long heapCreationDate, long createdAt, long updatedAt, String jvmParameters) {
+    // sample name: eu35-app2-30-cdg-43671.hprof
+    // host would be: eu35-app2-30-cdg?
+    // pod would be: 43671?
+    // osbit would be: 
+
+    public HeapSummary(String name, String generatedName, long usedHeapSize, long classCount, long objectCount, long classLoaderCount, long gcRootCount, String osBit, String pod, String hostName, long heapCreationDate, long createdAt, long updatedAt, String jvmParameters) {
         this.name = name;
         this.generatedName = generatedName;
-        this.heapId = heapId;
         this.usedHeapSize = usedHeapSize;
         this.classCount = classCount;
         this.objectCount = objectCount;
@@ -52,9 +55,6 @@ public class HeapSummary {
         return generatedName;
     }
     
-    public int getHeapId() {
-        return heapId;
-    }
     
     public long getUsedHeapSize() {
         return usedHeapSize;
@@ -106,10 +106,6 @@ public class HeapSummary {
     
     public void setGeneratedName(String generatedName) {
         this.generatedName = generatedName;
-    }
-    
-    public void setHeapId(int heapId) {
-        this.heapId = heapId;
     }
     
     public void setUsedHeapSize(long usedHeapSize) {

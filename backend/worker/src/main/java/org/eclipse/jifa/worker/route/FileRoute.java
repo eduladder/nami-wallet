@@ -35,8 +35,20 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.io.File;
+import java.io.IOException;
+import java.net.MalformedURLException;
+import java.net.URL;
+import java.security.KeyManagementException;
+import java.security.NoSuchAlgorithmException;
+import java.security.cert.CertificateException;
+import java.security.cert.X509Certificate;
 import java.util.List;
 import java.util.Set;
+
+import javax.net.ssl.HttpsURLConnection;
+import javax.net.ssl.SSLContext;
+import javax.net.ssl.TrustManager;
+import javax.net.ssl.X509TrustManager;
 
 import static org.eclipse.jifa.common.Constant.EMPTY_STRING;
 import static org.eclipse.jifa.common.util.Assertion.ASSERT;
@@ -80,8 +92,53 @@ class FileRoute extends BaseRoute {
         return path.substring(path.lastIndexOf(File.separatorChar) + 1);
     }
 
+    private String extractGZipFileName(HttpsURLConnection conn) {
+        String cd = conn.getHeaderField("content-disposition");
+        int start = cd.indexOf("filename = ") + 11;
+        int fin = cd.indexOf(".gz");
+        return cd.substring(start, fin);
+    }
+
+    private class AcceptAllTrustManager implements X509TrustManager {
+    @Override
+        public void checkClientTrusted(X509Certificate[] chain, String authType) throws CertificateException {
+            // Accept all client certificates without validation
+        }
+
+        @Override
+        public void checkServerTrusted(X509Certificate[] chain, String authType) throws CertificateException {
+            // Accept all server certificates without validation
+        }
+
+        @Override
+        public X509Certificate[] getAcceptedIssuers() {
+            return new X509Certificate[0];
+        }
+    }
+
     @RouteMeta(path = "/file/transferByURL", method = HttpMethod.POST)
     void transferByURL(Future<TransferringFile> future, @ParamKey("type") FileType fileType,
+                       @ParamKey("url") String url, @ParamKey(value = "fileName", mandatory = false) String fileName) throws KeyManagementException, MalformedURLException, IOException, NoSuchAlgorithmException {
+        // Create an SSLContext with the custom TrustManager
+        SSLContext sslContext = SSLContext.getInstance("TLS");
+        sslContext.init(null, new TrustManager[] { new AcceptAllTrustManager() }, null);
+
+        // Set the custom SSLContext on the HttpsURLConnection
+        HttpsURLConnection.setDefaultSSLSocketFactory(sslContext.getSocketFactory());
+
+        HttpsURLConnection conn = (HttpsURLConnection) new URL(url).openConnection();
+        String originalName = extractGZipFileName(conn);
+
+        fileName = Strings.isNotBlank(fileName) ? fileName : decorateFileName(originalName);
+
+        TransferListener listener = FileSupport.createTransferListener(fileType, originalName, fileName);
+        
+        // for now, assume all url's lead to gzips
+        FileSupport.transferByURLGZIP(conn, fileType, fileName, originalName, listener, future);
+    }
+
+    @RouteMeta(path = "/file/transferByURLOriginal", method = HttpMethod.POST)
+    void transferByURLOriginal(Future<TransferringFile> future, @ParamKey("type") FileType fileType,
                        @ParamKey("url") String url, @ParamKey(value = "fileName", mandatory = false) String fileName) {
 
         String originalName = extractFileName(url);
@@ -89,7 +146,7 @@ class FileRoute extends BaseRoute {
         fileName = Strings.isNotBlank(fileName) ? fileName : decorateFileName(originalName);
 
         TransferListener listener = FileSupport.createTransferListener(fileType, originalName, fileName);
-
+        // for now, assume all url's lead to gzips
         FileSupport.transferByURL(url, fileType, fileName, listener, future);
     }
 

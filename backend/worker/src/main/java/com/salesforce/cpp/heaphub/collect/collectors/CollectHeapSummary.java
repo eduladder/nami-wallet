@@ -24,6 +24,7 @@ public class CollectHeapSummary extends CollectBase {
         this.heapName = heapName;
         this.createdAt = createdAt;
     }
+    
     public HeapSummary getHeapDetails() throws ClientProtocolException, IOException {
         Response res = new Response(CLIENT_SYNC.execute(heapDetailsRequest()));
         if (res.getStatusCode() >= 300) {

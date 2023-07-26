@@ -51,17 +51,17 @@ public class HeapHubCollectRoutes extends HeapHubBaseRoute{
         // Collect collect = new Collect(file);
         // collect.collectAsCSV(dest, dominatorMinSize, branchingFactor, maxDepth, maxOutbounds, histoMinSize, threadMinSize);
         long currTime = System.currentTimeMillis();
-        // CollectHeapSummary hs = new CollectHeapSummary(file, currTime);
-        // int heapId = hs.collect();
-        // CollectDomTree cdt = new CollectDomTree(file, 5, currTime, 50*1000*1000, 10, 2);
-        //  ArrayList<DomTreeObject> roots = cdt.uploadToSQL();
-        CollectHistogram ch = new CollectHistogram(file, 5, currTime, 150*1000*1000);
-        // ch.collectAndUpload();
-        // CollectThreads ct = new CollectThreads(file, 5, currTime, threadMinSize);
-        // ct.collectAndUpload();
-        // ArrayList<ThreadIds> threadIds = ct.getThreadIds();
-        // CollectThreadStack cts = new CollectThreadStack(file, 5, currTime, threadIds);
-        // cts.collectAndUpload();
+        CollectHeapSummary hs = new CollectHeapSummary(file, currTime);
+        int heapId = hs.collect();
+        CollectDomTree cdt = new CollectDomTree(file, heapId, currTime, 50*1000*1000, 10, 2);
+         ArrayList<DomTreeObject> roots = cdt.uploadToSQL();
+        CollectHistogram ch = new CollectHistogram(file, heapId, currTime, 150*1000*1000);
+        ch.collectAndUpload();
+        CollectThreads ct = new CollectThreads(file, heapId, currTime, threadMinSize);
+        ct.collectAndUpload();
+        ArrayList<ThreadIds> threadIds = ct.getThreadIds();
+        CollectThreadStack cts = new CollectThreadStack(file, heapId, currTime, threadIds);
+        cts.collectAndUpload();
         ch.collectCSVAndUpload();
         future.complete(new JsonObject("{\"success\": \"true\"}"));
     }
