@@ -19,7 +19,6 @@ import org.eclipse.jifa.worker.route.ParamKey;
 import org.eclipse.jifa.worker.route.RouteMeta;
 import org.eclipse.jifa.worker.vo.heapdump.dominatortree.BaseRecord;
 
-import com.salesforce.cpp.heaphub.collect.Collect;
 import com.salesforce.cpp.heaphub.collect.collectors.CollectDomTree;
 import com.salesforce.cpp.heaphub.collect.collectors.CollectHeapSummary;
 import com.salesforce.cpp.heaphub.collect.collectors.CollectHistogram;
