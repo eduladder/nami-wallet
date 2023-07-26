@@ -5,14 +5,14 @@ import org.eclipse.jifa.worker.Constant;
 import io.vertx.core.json.JsonObject;
 
 public class ClassHistoInfo {
-        private int heapId; // done
-        private Long createdAt; //
-        private String label; // do
-        private long numberOfObjects; //
-        private long shallowSize; //
-        private long retainedSize; //
-        private int objectId; // done
-        private int type; //
+        private int heapId;
+        private Long createdAt;
+        private String label;
+        private long numberOfObjects;
+        private long shallowSize;
+        private long retainedSize;
+        private int objectId;
+        private int type;
 
 
         public ClassHistoInfo(JsonObject obj, int heapId, long analysisTime) {

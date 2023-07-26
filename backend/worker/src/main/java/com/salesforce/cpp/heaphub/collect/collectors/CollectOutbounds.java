@@ -1,5 +1,6 @@
 package com.salesforce.cpp.heaphub.collect.collectors;
 
+import java.io.IOException;
 import java.net.URI;
 import java.util.ArrayList;
 
@@ -110,6 +111,29 @@ public class CollectOutbounds extends CollectBase {
             return acc;
         } catch (Exception e) {
             return null;
+        }
+    }
+
+    public void collectAndUpload() throws IOException {
+        ArrayList<Outbounds> outbounds = collectRootOutbounds();
+        StringBuilder sb = new StringBuilder(Outbounds.uploadSQLStatement());
+        int cnt = 0;
+        for (Outbounds obj : outbounds) {
+            if (cnt > 0) {
+                sb.append(", ");
+            }
+            sb.append(obj.getSQLValues());
+            cnt++;
+            if (cnt == 100) {
+                sb.append(";");
+                driver.executeUpdate(sb.toString());
+                sb = new StringBuilder(Outbounds.uploadSQLStatement());
+                cnt = 0;
+            }
+        }
+        if (cnt != 0) {
+            sb.append(";");
+            driver.executeUpdate(sb.toString());
         }
     }
 

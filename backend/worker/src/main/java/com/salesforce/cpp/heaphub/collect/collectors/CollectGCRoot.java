@@ -14,6 +14,7 @@ import org.eclipse.jifa.worker.Constant;
 import com.salesforce.cpp.heaphub.collect.models.DomTreeObject;
 import com.salesforce.cpp.heaphub.collect.models.GCRootPath;
 import com.salesforce.cpp.heaphub.collect.models.GCRootPath.PathToGCRootElement;
+import com.salesforce.cpp.heaphub.collect.models.Outbounds;
 import com.salesforce.cpp.heaphub.util.Response;
 
 import io.vertx.core.json.JsonArray;
@@ -38,7 +39,7 @@ public class CollectGCRoot extends CollectBase {
     }
     
     
-    public ArrayList<PathToGCRootElement> collectPathsToGCRoots( ArrayList<DomTreeObject> roots) {
+    public ArrayList<PathToGCRootElement> collectPathsToGCRoots() {
         try {
             ArrayList<PathToGCRootElement> acc = new ArrayList<PathToGCRootElement>();
             for (DomTreeObject root : roots) {
@@ -139,4 +140,26 @@ public class CollectGCRoot extends CollectBase {
         return output;
     }
 
+    public void collectAndUpload() throws IOException {
+        ArrayList<PathToGCRootElement> gcPaths = collectPathsToGCRoots();
+        StringBuilder sb = new StringBuilder(PathToGCRootElement.uploadSQLStatement());
+        int cnt = 0;
+        for (PathToGCRootElement obj : gcPaths) {
+            if (cnt > 0) {
+                sb.append(", ");
+            }
+            sb.append(obj.getSQLValues());
+            cnt++;
+            if (cnt == 100) {
+                sb.append(";");
+                driver.executeUpdate(sb.toString());
+                sb = new StringBuilder(PathToGCRootElement.uploadSQLStatement());
+                cnt = 0;
+            }
+        }
+        if (cnt != 0) {
+            sb.append(";");
+            driver.executeUpdate(sb.toString());
+        }
+    }
 }

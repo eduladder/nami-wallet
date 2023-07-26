@@ -78,8 +78,12 @@ public class Outbounds {
             return String.format("%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s\n", objectId, prefix, label, suffix, shallowSize, retainedSize, hasInbound, hasOutbound, objectType, gCRoot, sourceId, heapId, createdAt);
         }
 
-        public String uploadSQLStatement() {
-            return String.format("INSERT INTO outbounds (heap_id,source_id, object_id, prefix, label, suffix, shallow_size, retained_size, has_inbound, has_outbound, object_type, gc_root, created_at, updated_at) VALUES (%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,to_timestamp(%s),to_timestamp(%s));", heapId, sourceId, objectId, prefix, label, suffix, shallowSize, retainedSize, hasInbound, hasOutbound, objectType, gCRoot, createdAt/1000, createdAt/1000);
+        public static String uploadSQLStatement() {
+            return "INSERT INTO outbounds (heap_id,source_id, object_id, prefix, label, suffix, shallow_size, retained_size, has_inbound, has_outbound, object_type, gc_root, created_at, updated_at) VALUES ";
+        }
+
+        public String getSQLValues() {
+            return String.format("(%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,to_timestamp(%s),to_timestamp(%s))", heapId, sourceId, objectId, prefix, label, suffix, shallowSize, retainedSize, hasInbound, hasOutbound, objectType, gCRoot, createdAt/1000, createdAt/1000);
         }
 
         public String[] getCSVArray() {

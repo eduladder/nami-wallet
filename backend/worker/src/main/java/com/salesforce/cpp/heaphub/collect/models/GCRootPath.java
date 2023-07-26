@@ -136,8 +136,12 @@ public class GCRootPath {
                     parentId, objectId, label, memoryLocation, origin, suffix, prefix, hasInbound, hasOutbound, gCRoot, shallowSize, retainedSize, objectType, heapId, createdAt, sourceId);
         }
 
-        public String uploadSQLStatement() {
-            return String.format("INSERT INTO path_to_gc_root (heap_id, source_id, parent_id, object_id, label, memory_location, origin, suffix, prefix, has_inbound, has_outbound, gc_root, shallow_size, retained_size, object_type, created_at, updated_at) VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, to_timestamp(%s), to_timestamp(%s));",
+        public static String uploadSQLStatement() {
+            return "INSERT INTO path_to_gc_root (heap_id, source_id, parent_id, object_id, label, memory_location, origin, suffix, prefix, has_inbound, has_outbound, gc_root, shallow_size, retained_size, object_type, created_at, updated_at) VALUES ";
+        }
+
+        public String getSQLValues() {
+            return String.format("(%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, to_timestamp(%s), to_timestamp(%s))",
             heapId, sourceId, parentId, objectId, label, memoryLocation, origin, suffix, prefix, hasInbound, hasOutbound, gCRoot, shallowSize, retainedSize, objectType, createdAt/1000, createdAt/1000);
         }
 
