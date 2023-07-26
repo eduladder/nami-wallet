@@ -61,8 +61,13 @@ public class ThreadInfo {
             return createdAt;
         }
 
-        public String uploadSQLStatement() {
-            return String.format("INSERT INTO thread_info (heap_id, object_id, object_label, thread_name, context_class_loader, has_stack, is_daemon, shallow_size, retained_size, created_at, updated_at) VALUES (%s, %s, $HEAPHUB_ESC_TAG$%s$HEAPHUB_ESC_TAG$, $HEAPHUB_ESC_TAG$%s$HEAPHUB_ESC_TAG$, $HEAPHUB_ESC_TAG$%s$HEAPHUB_ESC_TAG$, %s, %s, %s, %s, to_timestamp(%s), to_timestamp(%s));", heapId, this.getObjectId(), this.getObjectLabel(), this.getThreadName(), this.getContextClassLoader(), this.hasStack(), this.isDaemon(), this.getShallowSize(), this.getRetainedSize(), this.getCreatedAt()/1000, this.getCreatedAt()/1000);
+        public static String uploadSQLStatement() {
+            return "INSERT INTO thread_info (heap_id, object_id, object_label, thread_name, context_class_loader, has_stack, is_daemon, shallow_size, retained_size, created_at, updated_at) VALUES ";
+        }
+
+
+        public String getSQLValues() {
+            return String.format("(%s, %s, $HEAPHUB_ESC_TAG$%s$HEAPHUB_ESC_TAG$, $HEAPHUB_ESC_TAG$%s$HEAPHUB_ESC_TAG$, $HEAPHUB_ESC_TAG$%s$HEAPHUB_ESC_TAG$, %s, %s, %s, %s, to_timestamp(%s), to_timestamp(%s))", heapId, this.getObjectId(), this.getObjectLabel(), this.getThreadName(), this.getContextClassLoader(), this.hasStack(), this.isDaemon(), this.getShallowSize(), this.getRetainedSize(), this.getCreatedAt()/1000, this.getCreatedAt()/1000);
         }
 
         public static String getIds(int heapId) {

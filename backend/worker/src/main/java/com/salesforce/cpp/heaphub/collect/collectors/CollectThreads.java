@@ -13,6 +13,7 @@ import org.eclipse.jifa.worker.Constant;
 import org.json.JSONArray;
 import org.json.JSONObject;
 
+import com.salesforce.cpp.heaphub.collect.models.ClassHistoInfo;
 import com.salesforce.cpp.heaphub.collect.models.DomTreeObject;
 import com.salesforce.cpp.heaphub.collect.models.ThreadInfo;
 import com.salesforce.cpp.heaphub.collect.models.ThreadIds;
@@ -102,8 +103,24 @@ public class CollectThreads extends CollectBase {
 
     public void collectAndUpload() throws IOException {
         ArrayList<ThreadInfo> arr = collectThreads(minSize);
-        for (ThreadInfo thread : arr) {
-            driver.executeUpdate(thread.uploadSQLStatement());
+        StringBuilder sb = new StringBuilder(ThreadInfo.uploadSQLStatement());
+        int cnt = 0;
+        for (ThreadInfo obj : arr) {
+            if (cnt > 0) {
+                sb.append(", ");
+            }
+            sb.append(obj.getSQLValues());
+            cnt++;
+            if (cnt == 100) {
+                sb.append(";");
+                driver.executeUpdate(sb.toString());
+                sb = new StringBuilder(ThreadInfo.uploadSQLStatement());
+                cnt = 0;
+            }
+        }
+        if (cnt != 0) {
+            sb.append(";");
+            driver.executeUpdate(sb.toString());
         }
     }
 

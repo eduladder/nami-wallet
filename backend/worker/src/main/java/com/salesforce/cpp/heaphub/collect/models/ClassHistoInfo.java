@@ -59,10 +59,13 @@ public class ClassHistoInfo {
                     heapId, objectId, label, numberOfObjects, type, shallowSize, retainedSize, createdAt);
         }
 
-        public String uploadSQLStatement() {
-            return String.format("INSERT INTO histogram (heap_id, object_id, object_label, number_of_objects, object_type, shallow_size, retained_size, created_at, updated_at) VALUES (%s, %s,$HEAPHUB_ESC_TAG$%s$HEAPHUB_ESC_TAG$, %s, %s, %s, %s, to_timestamp(%s), to_timestamp(%s));", 
+        public static String uploadSQLStatement() {
+            return new String("INSERT INTO histogram (heap_id, object_id, object_label, number_of_objects, object_type, shallow_size, retained_size, created_at, updated_at) VALUES ");
+        }
+
+        public String getSQLValues() {
+            return String.format("(%s, %s,$HEAPHUB_ESC_TAG$%s$HEAPHUB_ESC_TAG$, %s, %s, %s, %s, to_timestamp(%s), to_timestamp(%s))", 
                     heapId, objectId, label, numberOfObjects, type, shallowSize, retainedSize, createdAt/1000, createdAt/1000);
-        
         }
 
         static public String[] getCSVHeader() {

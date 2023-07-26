@@ -223,9 +223,25 @@ public  ArrayList<DomTreeObject> addChildren( ArrayList<DomTreeObject> roots, lo
     public ArrayList<DomTreeObject> uploadToSQL() throws IOException {
         ArrayList<DomTreeObject> domRoots = collectDominatorRoots(minSize);
         ArrayList<DomTreeObject> domTree = addChildren (domRoots, minSize, branchingFactor, maxDepth);
-       for (DomTreeObject obj : domTree) {
-            driver.executeUpdate(obj.uploadSQLStatement());
-       } 
+        StringBuilder sb = new StringBuilder(DomTreeObject.uploadSQLStatement());
+        int cnt = 0;
+        for (DomTreeObject obj : domTree) {
+            if (cnt > 0) {
+                sb.append(", ");
+            }
+            sb.append(obj.getSQLValues());
+            cnt++;
+            if (cnt == 100) {
+                sb.append(";");
+                driver.executeUpdate(sb.toString());
+                sb = new StringBuilder(DomTreeObject.uploadSQLStatement());
+                cnt = 0;
+            }
+        }
+        if (cnt != 0) {
+            sb.append(";");
+            driver.executeUpdate(sb.toString());
+        }
        return domRoots;
     }
 

@@ -1,10 +1,8 @@
 package com.salesforce.cpp.heaphub.collect.models;
 
 import org.eclipse.jifa.worker.Constant;
-import org.eclipse.jifa.worker.vo.heapdump.dominatortree.BaseRecord;
 
 import io.vertx.core.json.JsonObject;
-import lombok.val;
 
 public class DomTreeObject {
         private int parentId; // done
@@ -119,8 +117,12 @@ public class DomTreeObject {
         }
 
         // percent is not included - add it 
-        public String uploadSQLStatement() {
-            return "INSERT INTO dominator_tree (heap_id, object_id, parent_id, object_label, memory_location, origin, suffix, shallow_size, retained_size, object_type, gc_root, created_at, updated_at, prefix, has_inbound, has_outbound) VALUES ("+ heapId + ", " + this.getObjectId() + ", " + parentId + ", $TAG_24121$" + this.getLabel() + "$TAG_24121$, $TAG_24121$" + this.getMemLocation() + "$TAG_24121$, " + this.isDomRoot + ", $TAG_24121$" + this.getSuffix() + "$TAG_24121$, " + this.getShallowSize() + ", " + this.getRetainedSize() + ", " + this.getObjectType() + ", " + this.isGCRoot() + ", to_timestamp(" + this.getCreatedAt()/1000 + "), to_timestamp(" + this.getCreatedAt()/1000 + "), NULL, NULL, NULL);";
+        public static String uploadSQLStatement() {
+            return "INSERT INTO dominator_tree (heap_id, object_id, parent_id, object_label, memory_location, origin, suffix, shallow_size, retained_size, object_type, gc_root, created_at, updated_at, prefix, has_inbound, has_outbound) VALUES ";
+        }
+
+        public String getSQLValues() {
+            return ("(" + heapId + ", " + this.getObjectId() + ", " + parentId + ", $TAG_24121$" + this.getLabel() + "$TAG_24121$, $TAG_24121$" + this.getMemLocation() + "$TAG_24121$, " + this.isDomRoot + ", $TAG_24121$" + this.getSuffix() + "$TAG_24121$, " + this.getShallowSize() + ", " + this.getRetainedSize() + ", " + this.getObjectType() + ", " + this.isGCRoot() + ", to_timestamp(" + this.getCreatedAt()/1000 + "), to_timestamp(" + this.getCreatedAt()/1000 + "), NULL, NULL, NULL)");
         }
 
         public String[] getCSVArray() {

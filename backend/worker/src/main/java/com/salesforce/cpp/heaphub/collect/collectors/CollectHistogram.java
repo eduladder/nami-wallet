@@ -101,8 +101,24 @@ public class CollectHistogram extends CollectBase {
     
     public void collectAndUpload() throws IOException {
         ArrayList<ClassHistoInfo> arr = collectHistogram(minSize);
-        for (ClassHistoInfo chi : arr) {
-                driver.executeUpdate(chi.uploadSQLStatement());
+        StringBuilder sb = new StringBuilder(ClassHistoInfo.uploadSQLStatement());
+        int cnt = 0;
+        for (ClassHistoInfo obj : arr) {
+            if (cnt > 0) {
+                sb.append(", ");
+            }
+            sb.append(obj.getSQLValues());
+            cnt++;
+            if (cnt == 100) {
+                sb.append(";");
+                driver.executeUpdate(sb.toString());
+                sb = new StringBuilder(ClassHistoInfo.uploadSQLStatement());
+                cnt = 0;
+            }
+        }
+        if (cnt != 0) {
+            sb.append(";");
+            driver.executeUpdate(sb.toString());
         }
     }
 

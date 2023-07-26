@@ -12,6 +12,7 @@ import org.apache.http.client.utils.URIBuilder;
 import org.eclipse.jifa.worker.Constant;
 
 import com.salesforce.cpp.heaphub.collect.models.ThreadIds;
+import com.salesforce.cpp.heaphub.collect.models.ThreadInfo;
 import com.salesforce.cpp.heaphub.collect.models.ThreadStackLocal;
 import com.salesforce.cpp.heaphub.common.HeapHubDatabaseManager;
 import com.salesforce.cpp.heaphub.util.Response;
@@ -135,11 +136,24 @@ public class CollectThreadStack extends CollectBase {
 
     public void collectAndUpload() throws ParseException, ClientProtocolException, URISyntaxException, IOException {
         ArrayList<ThreadStackLocal> stacksAndLocals = collectTraceAndLocals();
-        int i = 0;
+        StringBuilder sb = new StringBuilder(ThreadStackLocal.uploadSQLStatement());
+        int cnt = 0;
         for (ThreadStackLocal tsl : stacksAndLocals) {
-            driver.executeUpdate(tsl.uploadSQLStatement());
-            log(++i);
+            if (cnt > 0) {
+                sb.append(", ");
+            }
+            sb.append(tsl.getSQLValues());
+            cnt++;
+            if (cnt == 100) {
+                sb.append(";");
+                driver.executeUpdate(sb.toString());
+                sb = new StringBuilder(ThreadStackLocal.uploadSQLStatement());
+                cnt = 0;
+            }
+        }
+        if (cnt != 0) {
+            sb.append(";");
+            driver.executeUpdate(sb.toString());
         }
     }
-
 }
