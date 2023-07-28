@@ -220,7 +220,7 @@ public  ArrayList<DomTreeObject> addChildren( ArrayList<DomTreeObject> roots, lo
         return domTree;
     }
 
-    public ArrayList<DomTreeObject> uploadToSQL() throws IOException {
+    public ArrayList<DomTreeObject> collectAndUpload() throws IOException {
         ArrayList<DomTreeObject> domRoots = collectDominatorRoots(minSize);
         ArrayList<DomTreeObject> domTree = addChildren (domRoots, minSize, branchingFactor, maxDepth);
         StringBuilder sb = new StringBuilder(DomTreeObject.uploadSQLStatement());

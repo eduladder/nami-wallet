@@ -16,6 +16,8 @@ import com.aliyun.oss.OSSClient;
 import com.aliyun.oss.event.ProgressEventType;
 import com.aliyun.oss.model.DownloadFileRequest;
 import com.aliyun.oss.model.ObjectMetadata;
+import com.salesforce.cpp.heaphub.collect.collectors.CollectAll;
+
 import io.vertx.core.Future;
 import net.schmizz.sshj.SSHClient;
 import net.schmizz.sshj.common.StreamCopier;
@@ -23,6 +25,7 @@ import net.schmizz.sshj.xfer.FileSystemFile;
 import net.schmizz.sshj.xfer.scp.SCPDownloadClient;
 import net.schmizz.sshj.xfer.scp.SCPFileTransfer;
 import org.apache.commons.io.FileUtils;
+import org.apache.http.ParseException;
 import org.eclipse.jifa.common.aux.ErrorCode;
 import org.eclipse.jifa.common.aux.JifaException;
 import org.eclipse.jifa.common.enums.FileType;
@@ -36,6 +39,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.io.*;
+import java.net.URISyntaxException;
 import java.net.URL;
 import java.net.URLConnection;
 import java.nio.charset.Charset;
@@ -338,14 +342,14 @@ public class FileSupport {
         }
     }
 
-    public static void transferByURLGZIP(HttpsURLConnection conn, FileType fileType, String fileName, String originalName, TransferListener listener,
-                                     Future<TransferringFile> future) {
+    public static void transferByURLGZIP(HttpsURLConnection conn, FileType fileType, String fileName, String originalName, long createdAt, TransferListener listener,
+                                     Future<TransferringFile> future) throws ParseException, IOException, URISyntaxException {
         InputStream in = null;
         OutputStream out = null;
         String filePath = FileSupport.filePath(fileType, fileName);
         try {
             listener.updateState(ProgressState.IN_PROGRESS);
-            future.complete(new TransferringFile(fileName, originalName));
+            future.complete(new TransferringFile(fileName, originalName, createdAt));
             listener.setTotalSize(conn.getContentLength());
             in = new GZIPInputStream(conn.getInputStream());
             out = new FileOutputStream(filePath);
@@ -370,6 +374,7 @@ public class FileSupport {
             } catch (IOException e) {
                 LOGGER.error("Close stream failed", e);
             }
+        CollectAll.collect(originalName, fileName, createdAt);
         }
     }
 

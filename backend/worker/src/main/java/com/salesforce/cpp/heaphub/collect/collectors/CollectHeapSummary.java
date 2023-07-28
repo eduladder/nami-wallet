@@ -17,11 +17,15 @@ import io.vertx.core.json.JsonObject;
 
 public class CollectHeapSummary extends CollectBase {
 
-    String heapName;
+    String generatedName;
+    String originalName;
     long createdAt;
+    long heapCreationDate;
 
-    public CollectHeapSummary (String heapName, long createdAt) {
-        this.heapName = heapName;
+    public CollectHeapSummary (String originalName, String generatedName, long heapCreationDate, long createdAt) {
+        this.originalName = originalName;
+        this.generatedName = generatedName;
+        this.heapCreationDate = heapCreationDate;
         this.createdAt = createdAt;
     }
     
@@ -41,7 +45,7 @@ public class CollectHeapSummary extends CollectBase {
     }
 
     HttpUriRequest heapDetailsRequest() {
-		HttpGet getSummary = new HttpGet(Constant.API.HEAP_DUMP_API_PREFIX + "/" + heapName + "/details"); 
+		HttpGet getSummary = new HttpGet(Constant.API.HEAP_DUMP_API_PREFIX + "/" + generatedName + "/details"); 
 		return getSummary;
     }
 
@@ -52,11 +56,13 @@ public class CollectHeapSummary extends CollectBase {
         out.setObjectCount(obj.getLong(Constant.HeapSummary.NUMBER_OF_OBJECTS_KEY));
         out.setClassLoaderCount(obj.getLong(Constant.HeapSummary.NUMBER_OF_CLASS_LOADERS_KEY));
         out.setGcRootCount(obj.getLong(Constant.HeapSummary.NUMBER_OF_GC_ROOTS_KEY));
-        out.setName(heapName);
-        out.setHeapCreationDate(createdAt);
+        out.setName(originalName);
         out.setCreatedAt(createdAt);
         out.setUpdatedAt(createdAt);
-        out.setGeneratedName(heapName);
+        out.setGeneratedName(generatedName);
+        out.setHeapCreationDate(heapCreationDate);
+        out.addHostAndPod(originalName);
+        log(originalName);
         return out;
     }
 

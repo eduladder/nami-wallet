@@ -1,31 +1,22 @@
 package com.salesforce.cpp.heaphub.collect.models;
 
-import org.eclipse.jifa.worker.Constant;
-
-import com.google.gson.JsonObject;
-
 public class HeapSummary {
-    String name; // given
-    String generatedName; // given
-    Long usedHeapSize; // request response
-    Long classCount; // req response
-    Long objectCount; // req response
-    Long classLoaderCount; // req response
-    Long gcRootCount; // req response
-    String osBit; // unclear how to retrieve
-    String pod; // retrieve from name
-    String hostName; // retrieve from name
-    Long heapCreationDate; // retrieve from URL and then send with upload api
-    Long createdAt; // given
+    String name; 
+    String generatedName; 
+    Long usedHeapSize;
+    Long classCount;
+    Long objectCount; 
+    Long classLoaderCount; 
+    Long gcRootCount;
+    int osBit = 64;
+    String pod; 
+    String hostName; 
+    Long heapCreationDate; 
+    Long createdAt; 
     Long updatedAt;
     String jvmParameters;
 
-    // sample name: eu35-app2-30-cdg-43671.hprof
-    // host would be: eu35-app2-30-cdg?
-    // pod would be: 43671?
-    // osbit would be: 
-
-    public HeapSummary(String name, String generatedName, long usedHeapSize, long classCount, long objectCount, long classLoaderCount, long gcRootCount, String osBit, String pod, String hostName, long heapCreationDate, long createdAt, long updatedAt, String jvmParameters) {
+    public HeapSummary(String name, String generatedName, long usedHeapSize, long classCount, long objectCount, long classLoaderCount, long gcRootCount, int osBit, String pod, String hostName, long heapCreationDate, long createdAt, long updatedAt, String jvmParameters) {
         this.name = name;
         this.generatedName = generatedName;
         this.usedHeapSize = usedHeapSize;
@@ -76,7 +67,7 @@ public class HeapSummary {
         return gcRootCount;
     }
     
-    public String getOsBit() {
+    public int getOsBit() {
         return osBit;
     }
     
@@ -128,7 +119,7 @@ public class HeapSummary {
         this.gcRootCount = gcRootCount;
     }
     
-    public void setOsBit(String osBit) {
+    public void setOsBit(int osBit) {
         this.osBit = osBit;
     }
     
@@ -158,6 +149,12 @@ public class HeapSummary {
 
     public String getJVMParameters() {
         return jvmParameters;
+    }
+
+    public void addHostAndPod(String name) {
+        String[] names = name.split("-", 2);
+        pod = names[0];
+        hostName = names[1].substring(0, names[1].indexOf(".hprof"));
     }
 
     public String uploadSQLStatement() {

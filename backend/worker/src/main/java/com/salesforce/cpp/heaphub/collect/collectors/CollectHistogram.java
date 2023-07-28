@@ -44,7 +44,7 @@ public class CollectHistogram extends CollectBase {
                     break;
                 }
                 for (ClassHistoInfo obj : objs) {
-                    if (obj.getShallowSize() < minSize) {
+                    if (obj.getRetainedSize() < minSize) {
                         loop = false;
                         break;
                     } else {

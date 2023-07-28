@@ -19,6 +19,7 @@ public class TransferringFile {
 
     private String name;
     private String originalName;
+    private long createdAt = (long) -1;
 
     public TransferringFile(String fileName) {
         this.name = fileName;
@@ -27,5 +28,10 @@ public class TransferringFile {
     public TransferringFile(String fileName, String originalName) {
         this.name = fileName;
         this.originalName = originalName;
+    }
+    public TransferringFile(String fileName, String originalName, long createdAt) {
+        this.name = fileName;
+        this.originalName = originalName;
+        this.createdAt = createdAt;
     }
 }

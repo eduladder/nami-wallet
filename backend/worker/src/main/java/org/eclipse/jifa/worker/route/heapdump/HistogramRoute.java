@@ -61,7 +61,7 @@ class HistogramRoute extends HeapBaseRoute {
                         throw new JifaException(e);
                     }
                 });
-                records.sort((o1, o2) -> (int) (o2.getUsedHeapSize() - o1.getUsedHeapSize()));
+                records.sort((o1, o2) -> (int) (-o2.getRetainedHeapSize() + o1.getRetainedHeapSize()));
                 future.complete(PageViewBuilder.build(records, pagingRequest,
                                                       record -> new Record(record.getClassId(), record.getLabel(),
                                                                            Record.Type.CLASS,

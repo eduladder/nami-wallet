@@ -18,6 +18,9 @@ import io.vertx.core.http.HttpMethod;
 import io.vertx.core.http.HttpServerResponse;
 import io.vertx.ext.web.FileUpload;
 import io.vertx.ext.web.RoutingContext;
+
+import org.apache.http.NameValuePair;
+import org.apache.http.client.utils.URLEncodedUtils;
 import org.apache.logging.log4j.util.Strings;
 import org.eclipse.jifa.common.enums.FileType;
 import org.eclipse.jifa.common.enums.ProgressState;
@@ -37,7 +40,10 @@ import org.slf4j.LoggerFactory;
 import java.io.File;
 import java.io.IOException;
 import java.net.MalformedURLException;
+import java.net.URI;
+import java.net.URISyntaxException;
 import java.net.URL;
+import java.nio.charset.Charset;
 import java.security.KeyManagementException;
 import java.security.NoSuchAlgorithmException;
 import java.security.cert.CertificateException;
@@ -118,23 +124,33 @@ class FileRoute extends BaseRoute {
 
     @RouteMeta(path = "/file/transferByURL", method = HttpMethod.POST)
     void transferByURL(Future<TransferringFile> future, @ParamKey("type") FileType fileType,
-                       @ParamKey("url") String url, @ParamKey(value = "fileName", mandatory = false) String fileName) throws KeyManagementException, MalformedURLException, IOException, NoSuchAlgorithmException {
+                       @ParamKey("url") String url, @ParamKey(value = "fileName", mandatory = false) String fileName) throws KeyManagementException, MalformedURLException, IOException, NoSuchAlgorithmException, URISyntaxException {
         // Create an SSLContext with the custom TrustManager
         SSLContext sslContext = SSLContext.getInstance("TLS");
         sslContext.init(null, new TrustManager[] { new AcceptAllTrustManager() }, null);
 
         // Set the custom SSLContext on the HttpsURLConnection
         HttpsURLConnection.setDefaultSSLSocketFactory(sslContext.getSocketFactory());
-
-        HttpsURLConnection conn = (HttpsURLConnection) new URL(url).openConnection();
+        URL aURL = new URL(url);
+        HttpsURLConnection conn = (HttpsURLConnection) aURL.openConnection();
         String originalName = extractGZipFileName(conn);
-
+        String createdAt = null;
+        List<NameValuePair> params = URLEncodedUtils.parse(new URI(aURL.toString()), "UTF-8");
+        for (NameValuePair param : params) {
+            if (param.getName() == "timestamp");
+            createdAt = param.getValue();
+            break;
+        }
+        long createdTime = -1;
+        if (createdAt != null) {
+            createdTime = Long.parseLong(createdAt);
+        }
         fileName = Strings.isNotBlank(fileName) ? fileName : decorateFileName(originalName);
 
         TransferListener listener = FileSupport.createTransferListener(fileType, originalName, fileName);
         
         // for now, assume all url's lead to gzips
-        FileSupport.transferByURLGZIP(conn, fileType, fileName, originalName, listener, future);
+        FileSupport.transferByURLGZIP(conn, fileType, fileName, originalName, createdTime, listener, future);
     }
 
     @RouteMeta(path = "/file/transferByURLOriginal", method = HttpMethod.POST)

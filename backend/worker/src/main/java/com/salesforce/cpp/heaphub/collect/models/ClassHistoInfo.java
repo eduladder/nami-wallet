@@ -20,7 +20,9 @@ public class ClassHistoInfo {
             this.label = label;
             this.numberOfObjects = obj.getLong(Constant.Histogram.NUM_OBJECTS_KEY);
             this.shallowSize = obj.getLong(Constant.Histogram.SHALLOW_SIZE_KEY);
-            this.retainedSize = obj.getLong(Constant.Histogram.RETAINED_SIZE_KEY);
+            // for some reason backend returns negative number
+            // fixing in backend affects frontend for some reason
+            this.retainedSize = -obj.getLong(Constant.Histogram.RETAINED_SIZE_KEY);
             this.objectId = obj.getInteger(Constant.Histogram.OBJECT_ID_KEY);
             this.type = obj.getInteger(Constant.Histogram.TYPE_KEY);
             this.createdAt = analysisTime;
