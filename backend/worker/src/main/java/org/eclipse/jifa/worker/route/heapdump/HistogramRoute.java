@@ -33,6 +33,19 @@ import java.util.List;
 
 class HistogramRoute extends HeapBaseRoute {
 
+    private int compareRetainedHeapSize(ClassHistogramRecord o1, ClassHistogramRecord o2) {
+        if (o1 == null && o2 == null) {
+            return 0;
+        }
+        if (o1 == null) {
+            return -1;
+        }
+        if (o2 == null) {
+            return 1;
+        }
+        return Long.compare(o1.getRetainedHeapSize(), o2.getRetainedHeapSize());
+    }
+
     @RouteMeta(path = "/histogram")
     void histogram(Future<PageView<Record>> future, @ParamKey("file") String file,
                    @ParamKey("groupingBy") Grouping groupingBy, @ParamKey(value = "ids", mandatory = false) int[] ids,
@@ -61,7 +74,8 @@ class HistogramRoute extends HeapBaseRoute {
                         throw new JifaException(e);
                     }
                 });
-                records.sort((o1, o2) -> (int) (-o2.getRetainedHeapSize() + o1.getRetainedHeapSize()));
+                records.sort((o1,o2) -> compareRetainedHeapSize(o1, o2));
+
                 future.complete(PageViewBuilder.build(records, pagingRequest,
                                                       record -> new Record(record.getClassId(), record.getLabel(),
                                                                            Record.Type.CLASS,

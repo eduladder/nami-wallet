@@ -13,7 +13,7 @@ import com.salesforce.cpp.heaphub.util.Processing;
 public class CollectAll extends CollectBase {
 
     public static void collect(String originalName, String generatedName, long heapCreationDate) throws IOException, ParseException, URISyntaxException {
-        // Processing.Analyze(generatedName);
+        Processing.Analyze(generatedName);
         long currTime = System.currentTimeMillis();
         CollectHeapSummary hs = new CollectHeapSummary(originalName, generatedName,heapCreationDate, currTime);
         int heapId = hs.collect();
@@ -27,5 +27,4 @@ public class CollectAll extends CollectBase {
         CollectThreadStack cts = new CollectThreadStack(generatedName, heapId, currTime, threadIds);
         cts.collectAndUpload();
     }
-    
 }
