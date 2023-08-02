@@ -62,7 +62,6 @@ public class CollectHeapSummary extends CollectBase {
         out.setGeneratedName(generatedName);
         out.setHeapCreationDate(heapCreationDate);
         out.addHostAndPod(originalName);
-        log(originalName);
         return out;
     }
 

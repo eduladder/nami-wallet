@@ -32,8 +32,8 @@ public class Processing {
     //   }
     // }
     public static void Analyze(String fileName) throws ClientProtocolException, IOException {
-		HttpPost analyze = new HttpPost(Constant.API.HEAP_DUMP_API_PREFIX + "/" + fileName + "/analyze");
-    CLIENT_SYNC.execute(analyze);
+      HttpPost analyze = new HttpPost(Constant.API.HEAP_DUMP_API_PREFIX + "/" + fileName + "/analyze");
+      CLIENT_SYNC.execute(analyze);
 		// Response res = new Response(CLIENT_SYNC.execute(analyze));
     //         if (res.getStatusCode() >= 300) {
     //         return null;

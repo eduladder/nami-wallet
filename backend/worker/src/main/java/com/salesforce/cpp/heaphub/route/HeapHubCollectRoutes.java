@@ -20,11 +20,13 @@ import org.eclipse.jifa.worker.route.RouteMeta;
 import org.eclipse.jifa.worker.vo.heapdump.dominatortree.BaseRecord;
 
 import com.salesforce.cpp.heaphub.collect.collectors.CollectAll;
+import com.salesforce.cpp.heaphub.collect.collectors.CollectClassReference;
 import com.salesforce.cpp.heaphub.collect.collectors.CollectDomTree;
 import com.salesforce.cpp.heaphub.collect.collectors.CollectHeapSummary;
 import com.salesforce.cpp.heaphub.collect.collectors.CollectHistogram;
 import com.salesforce.cpp.heaphub.collect.collectors.CollectThreadStack;
 import com.salesforce.cpp.heaphub.collect.collectors.CollectThreads;
+import com.salesforce.cpp.heaphub.collect.models.ClassHistoInfo;
 import com.salesforce.cpp.heaphub.collect.models.DomTreeObject;
 import com.salesforce.cpp.heaphub.collect.models.HeapSummary;
 import com.salesforce.cpp.heaphub.collect.models.ThreadIds;
@@ -50,20 +52,22 @@ public class HeapHubCollectRoutes extends HeapHubBaseRoute{
         // String dest = "/Users/dbarra/git/heaphub/outputs";
         // Collect collect = new Collect(file);
         // collect.collectAsCSV(dest, dominatorMinSize, branchingFactor, maxDepth, maxOutbounds, histoMinSize, threadMinSize);
-        // long currTime = System.currentTimeMillis();
+        long currTime = System.currentTimeMillis();
         // CollectHeapSummary hs = new CollectHeapSummary(file, currTime);
         // int heapId = hs.collect();
         // CollectDomTree cdt = new CollectDomTree(file, heapId, currTime, 50*1000*1000, 10, 2);
         //  ArrayList<DomTreeObject> roots = cdt.uploadToSQL();
-        // CollectHistogram ch = new CollectHistogram(file, heapId, currTime, 150*1000*1000);
-        // ch.collectAndUpload();
+        CollectHistogram ch = new CollectHistogram("1690838343572-scrubbed_eu35-app2-30-cdg-43671.hprof", 14, currTime, 150*1000*1000);
+        ArrayList<ClassHistoInfo> histogram = ch.collectAndUpload();
         // CollectThreads ct = new CollectThreads(file, heapId, currTime, threadMinSize);
         // ct.collectAndUpload();
         // ArrayList<ThreadIds> threadIds = ct.getThreadIds();
         // CollectThreadStack cts = new CollectThreadStack(file, heapId, currTime, threadIds);
         // cts.collectAndUpload();
         // ch.collectCSVAndUpload();
-        CollectAll.collect("scrubbed_eu35-app2-30-cdg-43671.hprof", "1690581426845-scrubbed_eu35-app2-30-cdg-43671.hprof", 1687980248105l);
+        // CollectAll.collect("scrubbed_eu35-app2-30-cdg-43671.hprof", "1690831032434-scrubbed_eu35-app2-30-cdg-43671.hprof", 1687980248105l);
+        CollectClassReference ccr = new CollectClassReference(14, "1690838343572-scrubbed_eu35-app2-30-cdg-43671.hprof", 1690838343572l, histogram, 2, 10);
+        ccr.collectAndUpload();
         future.complete(new JsonObject("{\"success\": \"true\"}"));
     }
 

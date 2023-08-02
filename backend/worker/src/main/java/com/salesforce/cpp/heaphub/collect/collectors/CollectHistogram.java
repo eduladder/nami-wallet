@@ -33,7 +33,7 @@ public class CollectHistogram extends CollectBase {
         this.minSize = minSize;
     }
 
-    public ArrayList<ClassHistoInfo> collectHistogram(long minSize) {
+    public ArrayList<ClassHistoInfo> collectHistogram() {
         try {
             int i = 1;
             boolean loop = true;
@@ -99,8 +99,8 @@ public class CollectHistogram extends CollectBase {
         }
     }
     
-    public void collectAndUpload() throws IOException {
-        ArrayList<ClassHistoInfo> arr = collectHistogram(minSize);
+    public ArrayList<ClassHistoInfo> collectAndUpload() throws IOException {
+        ArrayList<ClassHistoInfo> arr = collectHistogram();
         StringBuilder sb = new StringBuilder(ClassHistoInfo.uploadSQLStatement());
         int cnt = 0;
         for (ClassHistoInfo obj : arr) {
@@ -120,14 +120,14 @@ public class CollectHistogram extends CollectBase {
             sb.append(";");
             driver.executeUpdate(sb.toString());
         }
+        return arr;
     }
-
 
     public void collectCSVAndUpload() throws IOException {
         File file = new File(Common.csvDestination + "/histogram.csv");
         FileWriter outputfile = new FileWriter(file);
         CSVWriter writer = new CSVWriter(outputfile);
-        ArrayList<ClassHistoInfo> arr = collectHistogram(minSize);
+        ArrayList<ClassHistoInfo> arr = collectHistogram();
         writer.writeNext(ClassHistoInfo.getCSVHeader());
         for (ClassHistoInfo chi : arr) {
             writer.writeNext(chi.getCSVArray());
