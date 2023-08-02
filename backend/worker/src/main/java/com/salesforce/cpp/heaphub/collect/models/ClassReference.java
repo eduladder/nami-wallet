@@ -1,5 +1,6 @@
 package com.salesforce.cpp.heaphub.collect.models;
 
+import org.checkerframework.checker.regex.qual.Regex;
 import org.eclipse.jifa.worker.Constant;
 
 import io.vertx.core.json.JsonObject;
@@ -151,7 +152,7 @@ public class ClassReference {
 
     public String getSQLValues() {
         return String.format("(%s, %s, %s, $HEAPHUB_ESC_TAG$%s$HEAPHUB_ESC_TAG$, $HEAPHUB_ESC_TAG$%s$HEAPHUB_ESC_TAG$, $HEAPHUB_ESC_TAG$%s$HEAPHUB_ESC_TAG$, %s, %s, %s, %s, %s, %s, %s, to_timestamp(%s), to_timestamp(%s))", 
-                heapId, parentId, objectId, objectLabel, prefix, suffix, isInbound, hasInbound, hasOutbound, shallowSize, retainedSize, objectType, gCRoot, createdAt/1000, createdAt/1000);
+                heapId, parentId, objectId, objectLabel, prefix, suffix, isInbound, hasInbound, hasOutbound, shallowSize, retainedSize, objectType, gCRoot, createdAt/1000, createdAt/1000).replaceAll("[^\u0001-\u007F]+", "");
     }
 
 }
