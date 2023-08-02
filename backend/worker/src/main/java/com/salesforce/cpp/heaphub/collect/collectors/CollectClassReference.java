@@ -144,7 +144,7 @@ public class CollectClassReference extends CollectBase{
             loop = true;
             cnt = 0;
             while(loop) {
-                ArrayList<ClassReference> objs = getOutbounds(i, 32, parentId);
+                ArrayList<ClassReference> objs = getInbounds(i, 32, parentId);
                 if (objs == null || objs.size() == 0) {
                     break;
                 }
