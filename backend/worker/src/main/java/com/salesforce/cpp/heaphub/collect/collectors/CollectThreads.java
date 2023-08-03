@@ -4,7 +4,6 @@ import java.io.IOException;
 import java.net.URI;
 import java.net.URISyntaxException;
 import java.util.ArrayList;
-import java.util.List;
 
 import org.apache.http.client.ClientProtocolException;
 import org.apache.http.client.methods.HttpGet;
@@ -13,16 +12,16 @@ import org.eclipse.jifa.worker.Constant;
 import org.json.JSONArray;
 import org.json.JSONObject;
 
-import com.salesforce.cpp.heaphub.collect.models.ClassHistoInfo;
-import com.salesforce.cpp.heaphub.collect.models.DomTreeObject;
 import com.salesforce.cpp.heaphub.collect.models.ThreadInfo;
 import com.salesforce.cpp.heaphub.collect.models.ThreadIds;
-import com.salesforce.cpp.heaphub.common.HeapHubDatabaseManager;
 import com.salesforce.cpp.heaphub.util.Response;
 
 import io.vertx.core.json.JsonArray;
 import io.vertx.core.json.JsonObject;
 
+/**
+ * Collector class to collect a heap dump's thread. Upload the results to SQL. Only collect threads with size > minSize
+ */
 public class CollectThreads extends CollectBase {
 
     String heapName;
@@ -30,23 +29,36 @@ public class CollectThreads extends CollectBase {
     Long createdAt;
     Long minSize;
 
+
+    /***
+     * Constructor for CollectThreads
+     * @param heapName generated name for the heap 
+      * @param heapId primary key id of heap in SQL database
+     * @param createdAt time when analysis is being conducted
+      * @param minSize minimum retained size of the threads to collect
+     */
     public CollectThreads(String heapName, int heapId, Long createdAt, Long minSize) {
         this.heapName = heapName;
         this.heapId = heapId;
         this.createdAt = createdAt;
         this.minSize = minSize;
     }
-
-        
-    public ArrayList<ThreadInfo> collectThreads(long minSize) {
+    
+    
+    /***
+     * Collects all the threads with size > minSize of heap dump
+     * @return ArrayList<ThreadInfo>
+     * @throws IOException
+     */
+    public ArrayList<ThreadInfo> collectThreads(long minSize) throws IOException {
         try {
             int i = 1;
             boolean loop = true;
             ArrayList<ThreadInfo> arr = new ArrayList<ThreadInfo>(32);
+            // collect threads until retained size < minSize
             while(loop) {
                 ArrayList<ThreadInfo> objs = getThreads(i, 32);
                 if (objs == null || objs.size() == 0) {
-                    log("____null_____");
                     break;
                 }
                 for (ThreadInfo obj : objs) {
@@ -61,46 +73,52 @@ public class CollectThreads extends CollectBase {
             }
             return arr;
         } catch (Exception e){
-            e.printStackTrace();
+            log(e);
             return null;
         }
     }
 
+    /**
+     * paged call to JIFA API to get the threads
+     * @param page
+     * @param pageSize
+     */
     public ArrayList<ThreadInfo> getThreads(int page, int pageSize) throws ClientProtocolException, IOException, URISyntaxException {
-            URI uri = new URIBuilder(Constant.API.HEAP_DUMP_API_PREFIX + "/" + heapName + "/threads")
-            .addParameter("page", String.valueOf(page))
-            .addParameter("pageSize", String.valueOf(pageSize))
-            .build();
-            HttpGet getThreads = new HttpGet(uri);
-            Response res = new Response(CLIENT_SYNC.execute(getThreads));
-            if (res.getStatusCode() >= 300) {
-                // TODO: throw exception
+        // call JIFA API - assume result is sorted by thread retained size
+        URI uri = new URIBuilder(Constant.API.HEAP_DUMP_API_PREFIX + "/" + heapName + "/threads")
+        .addParameter("page", String.valueOf(page))
+        .addParameter("pageSize", String.valueOf(pageSize))
+        .build();
+        HttpGet getThreads = new HttpGet(uri);
+        Response res = new Response(CLIENT_SYNC.execute(getThreads));
+        if (res.getStatusCode() >= 300) {
+            return null;
+        } else {
+            // parse resonse and convert to data type
+            JsonObject resJSON = res.getBody();
+            if (resJSON == null) {
+                log("resJSON is null");
                 return null;
-            } else {
-                // create json object with res body
-                JsonObject resJSON = res.getBody();
-                if (resJSON == null) {
-                    log("resJSON is null");
-                    // TODO: throw exception
-                    return null;
-                }
-                // get data attribute of json body
-                JsonArray jsonArray = resJSON.getJsonArray("data");
-                if (jsonArray == null) {
-                    log("resJSON.data is null");
-                    // TODO: throw exception
-                    return null;
-                }
-                ArrayList<ThreadInfo> arr = new ArrayList<ThreadInfo>(32);
-                for (int i = 0; i < jsonArray.size(); i++) {
-                    JsonObject curr = jsonArray.getJsonObject(i);
-                    ThreadInfo thread = new ThreadInfo(curr, heapId, createdAt);
-                    arr.add(thread);
-                }
-                return arr;
             }
+            JsonArray jsonArray = resJSON.getJsonArray("data");
+            if (jsonArray == null) {
+                log("resJSON.data is null");
+                return null;
+            }
+            ArrayList<ThreadInfo> arr = new ArrayList<ThreadInfo>(32);
+            for (int i = 0; i < jsonArray.size(); i++) {
+                JsonObject curr = jsonArray.getJsonObject(i);
+                ThreadInfo thread = new ThreadInfo(curr, heapId, createdAt);
+                arr.add(thread);
+            }
+            return arr;
         }
+    }
 
+    /***
+     * Collect the threads and upload to SQL
+     * @throws IOException
+     */
     public void collectAndUpload() throws IOException {
         ArrayList<ThreadInfo> arr = collectThreads(minSize);
         StringBuilder sb = new StringBuilder(ThreadInfo.uploadSQLStatement());
@@ -124,6 +142,11 @@ public class CollectThreads extends CollectBase {
         }
     }
 
+    /**
+     * Get the thread ids from the SQL database (the object id of each thread and the sql generated primary key for the thread) - used to collect stack trace of heap 
+     * @return
+     * @throws IOException
+     */
     public ArrayList<ThreadIds> getThreadIds() throws IOException {
         JSONArray data = driver.executeSelect(ThreadInfo.getIds(heapId));
         ArrayList<ThreadIds> threadIds = new ArrayList<ThreadIds>();

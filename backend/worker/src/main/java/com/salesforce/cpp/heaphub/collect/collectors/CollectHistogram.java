@@ -1,7 +1,5 @@
 package com.salesforce.cpp.heaphub.collect.collectors;
 
-import java.io.File;
-import java.io.FileWriter;
 import java.io.IOException;
 import java.net.URI;
 import java.util.ArrayList;
@@ -11,13 +9,10 @@ import org.apache.http.client.utils.URIBuilder;
 import org.eclipse.jifa.worker.Constant;
 
 import com.salesforce.cpp.heaphub.collect.models.ClassHistoInfo;
-import com.salesforce.cpp.heaphub.common.HeapHubDatabaseManager;
 import com.salesforce.cpp.heaphub.util.Response;
-import com.salesforce.cpp.heaphub.common.Common;
 
 import io.vertx.core.json.JsonArray;
 import io.vertx.core.json.JsonObject;
-import com.opencsv.CSVWriter;
 
 
 public class CollectHistogram extends CollectBase {
@@ -26,6 +21,13 @@ public class CollectHistogram extends CollectBase {
     long createdAt;
     long minSize;
 
+    /***
+     * Constructor for CollectHistogram
+     * @param heapName generated name for the heap 
+     * @param heapId primary key id of heap in SQL database
+     * @param createdAt time when analysis is being conducted
+     * @param minSize minimum size of the histogram classes to collect
+     */
     public CollectHistogram(String heapName, int heapId, long createdAt, long minSize) {
         this.heapName = heapName;
         this.heapId = heapId;
@@ -33,13 +35,20 @@ public class CollectHistogram extends CollectBase {
         this.minSize = minSize;
     }
 
-    public ArrayList<ClassHistoInfo> collectHistogram() {
+
+    /***
+     * Collects all the histogram classes
+     * @return ArrayList<ClassHistoInfo> which contains all the histogram classes and their sizes
+     * @throws IOException
+     */
+    public ArrayList<ClassHistoInfo> collectHistogram() throws IOException {
         try {
             int i = 1;
             boolean loop = true;
             ArrayList<ClassHistoInfo> arr = new ArrayList<ClassHistoInfo>(32);
+            // collect histogram classes until retained size of returned class < minSize
             while(loop) {
-                ArrayList<ClassHistoInfo> objs = getHistogramRoots(i, 32);
+                ArrayList<ClassHistoInfo> objs = getHistogram(i, 32);
                 if (objs == null || objs.size() == 0) {
                     break;
                 }
@@ -55,13 +64,22 @@ public class CollectHistogram extends CollectBase {
             }
             return arr;
         } catch (Exception e){
-            e.printStackTrace();
+            log(e);
             return null;
         }
     }
 
-    public ArrayList<ClassHistoInfo> getHistogramRoots(int page, int pageSize) {
+
+    /***
+     * Get the histogram roots for a given page and page size
+     * @param page
+      * @param pageSize
+     * @return ArrayList<ClassHistoInfo> which contains all the histogram classes and their sizes
+     * @throws IOException
+     */
+    public ArrayList<ClassHistoInfo> getHistogram(int page, int pageSize) throws IOException {
         try {
+            // make request to JIFA API - assumes rsult sorted by retained size
             URI uri = new URIBuilder(Constant.API.HEAP_DUMP_API_PREFIX + "/" + heapName + "/histogram")
             .addParameter("groupingBy", "BY_CLASS")
             .addParameter("page", String.valueOf(page))
@@ -73,6 +91,7 @@ public class CollectHistogram extends CollectBase {
                 // TODO
                 return null;
             } else {
+                // convert to ClassHistoInfo
                 JsonObject resJSON = res.getBody();
                 if (resJSON == null) {
                     // TODO
@@ -94,21 +113,28 @@ public class CollectHistogram extends CollectBase {
                 return arr;
             }
         } catch (Exception e) {
-            // TODO
+            log(e);
             return null;
         }
     }
     
+    /***
+     * Collect the histogram and upload to SQL
+     * @return ArrayList<ClassHistoInfo> which contains all the histogram classes and their sizes
+     * @throws IOException
+     */
     public ArrayList<ClassHistoInfo> collectAndUpload() throws IOException {
         ArrayList<ClassHistoInfo> arr = collectHistogram();
         StringBuilder sb = new StringBuilder(ClassHistoInfo.uploadSQLStatement());
         int cnt = 0;
+        // use batch insert with batch size of 100 to upload data
         for (ClassHistoInfo obj : arr) {
             if (cnt > 0) {
                 sb.append(", ");
             }
             sb.append(obj.getSQLValues());
             cnt++;
+            // set batch size
             if (cnt == 100) {
                 sb.append(";");
                 driver.executeUpdate(sb.toString());
@@ -121,19 +147,6 @@ public class CollectHistogram extends CollectBase {
             driver.executeUpdate(sb.toString());
         }
         return arr;
-    }
-
-    public void collectCSVAndUpload() throws IOException {
-        File file = new File(Common.csvDestination + "/histogram.csv");
-        FileWriter outputfile = new FileWriter(file);
-        CSVWriter writer = new CSVWriter(outputfile);
-        ArrayList<ClassHistoInfo> arr = collectHistogram();
-        writer.writeNext(ClassHistoInfo.getCSVHeader());
-        for (ClassHistoInfo chi : arr) {
-            writer.writeNext(chi.getCSVArray());
-        }
-        driver.executeUpdate(ClassHistoInfo.uploadCSV(file.getAbsolutePath()));
-        file.delete();
     }
     
 }
