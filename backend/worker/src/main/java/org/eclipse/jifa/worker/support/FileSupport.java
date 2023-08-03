@@ -342,6 +342,7 @@ public class FileSupport {
         }
     }
 
+    // a helper function to transfer a url by gzip
     public static void transferByURLGZIP(HttpsURLConnection conn, FileType fileType, String fileName, String originalName, long createdAt, TransferListener listener,
                                      Future<TransferringFile> future) throws ParseException, IOException, URISyntaxException {
         InputStream in = null;

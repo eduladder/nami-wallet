@@ -43,7 +43,6 @@ import java.net.MalformedURLException;
 import java.net.URI;
 import java.net.URISyntaxException;
 import java.net.URL;
-import java.nio.charset.Charset;
 import java.security.KeyManagementException;
 import java.security.NoSuchAlgorithmException;
 import java.security.cert.CertificateException;
@@ -98,6 +97,8 @@ class FileRoute extends BaseRoute {
         return path.substring(path.lastIndexOf(File.separatorChar) + 1);
     }
 
+    // helper function to extract the file name from the content-disposition header of a connection to a warden heap dump
+    // assumes this connectio structure does not change
     private String extractGZipFileName(HttpsURLConnection conn) {
         String cd = conn.getHeaderField("content-disposition");
         int start = cd.indexOf("filename = ") + 11;
@@ -105,6 +106,7 @@ class FileRoute extends BaseRoute {
         return cd.substring(start, fin);
     }
 
+    // a trust manager that accepts everything in order to be able to download files from warden
     private class AcceptAllTrustManager implements X509TrustManager {
     @Override
         public void checkClientTrusted(X509Certificate[] chain, String authType) throws CertificateException {
@@ -122,6 +124,9 @@ class FileRoute extends BaseRoute {
         }
     }
 
+    // Custom route added to support downloading and unzipping gzip heapdums from warden URLs
+    // Assumes warden url information, structure, and naming conventions are constant for the time being
+    // TODO: seperate this route to heaphub to show that it is unique form typical jifa
     @RouteMeta(path = "/file/transferByURL", method = HttpMethod.POST)
     void transferByURL(Future<TransferringFile> future, @ParamKey("type") FileType fileType,
                        @ParamKey("url") String url, @ParamKey(value = "fileName", mandatory = false) String fileName) throws KeyManagementException, MalformedURLException, IOException, NoSuchAlgorithmException, URISyntaxException {
@@ -131,11 +136,13 @@ class FileRoute extends BaseRoute {
 
         // Set the custom SSLContext on the HttpsURLConnection
         HttpsURLConnection.setDefaultSSLSocketFactory(sslContext.getSocketFactory());
+
         URL aURL = new URL(url);
         HttpsURLConnection conn = (HttpsURLConnection) aURL.openConnection();
         String originalName = extractGZipFileName(conn);
         String createdAt = null;
         List<NameValuePair> params = URLEncodedUtils.parse(new URI(aURL.toString()), "UTF-8");
+        // extract heap creation date from warden url params
         for (NameValuePair param : params) {
             if (param.getName() == "timestamp");
             createdAt = param.getValue();
@@ -153,6 +160,7 @@ class FileRoute extends BaseRoute {
         FileSupport.transferByURLGZIP(conn, fileType, fileName, originalName, createdTime, listener, future);
     }
 
+    // original method to upload a heap dump by URL
     @RouteMeta(path = "/file/transferByURLOriginal", method = HttpMethod.POST)
     void transferByURLOriginal(Future<TransferringFile> future, @ParamKey("type") FileType fileType,
                        @ParamKey("url") String url, @ParamKey(value = "fileName", mandatory = false) String fileName) {
@@ -162,7 +170,6 @@ class FileRoute extends BaseRoute {
         fileName = Strings.isNotBlank(fileName) ? fileName : decorateFileName(originalName);
 
         TransferListener listener = FileSupport.createTransferListener(fileType, originalName, fileName);
-        // for now, assume all url's lead to gzips
         FileSupport.transferByURL(url, fileType, fileName, listener, future);
     }
 

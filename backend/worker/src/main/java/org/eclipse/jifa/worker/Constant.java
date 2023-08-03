@@ -12,6 +12,10 @@
  ********************************************************************************/
 package org.eclipse.jifa.worker;
 
+/**
+ * An interface to store constants used by the project
+ * TODO: pull out heaphub specific info and store in heaphub side of the project
+ */
 public interface Constant extends org.eclipse.jifa.common.Constant {
 
     interface Misc {

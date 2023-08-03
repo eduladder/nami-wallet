@@ -32,7 +32,7 @@ import org.eclipse.mat.snapshot.ISnapshot;
 import java.util.List;
 
 class HistogramRoute extends HeapBaseRoute {
-
+    // comparison function to allow for two ClassHistogramRecord to be compared by retained heap size
     private int compareRetainedHeapSize(ClassHistogramRecord o1, ClassHistogramRecord o2) {
         if (o1 == null && o2 == null) {
             return 0;
@@ -74,6 +74,7 @@ class HistogramRoute extends HeapBaseRoute {
                         throw new JifaException(e);
                     }
                 });
+                // Added to sort histogram by retainedHeapSize instead of shallow Size
                 records.sort((o1,o2) -> compareRetainedHeapSize(o1, o2));
 
                 future.complete(PageViewBuilder.build(records, pagingRequest,
