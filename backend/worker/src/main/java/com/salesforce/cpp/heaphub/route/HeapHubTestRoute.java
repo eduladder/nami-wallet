@@ -1,6 +1,3 @@
-/**
- * 
- */
 package com.salesforce.cpp.heaphub.route;
 
 import java.util.List;
@@ -32,7 +29,8 @@ import org.json.JSONArray;
 
 /**
  * @author dvayyala
- *
+ * test routes to test connection to db and application
+ * Also can be used as example of how to create routes
  */
 @SuppressWarnings("unused")
 public class HeapHubTestRoute extends HeapHubBaseRoute {

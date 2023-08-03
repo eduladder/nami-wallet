@@ -1,14 +1,11 @@
-/**
- * 
- */
 package com.salesforce.cpp.heaphub.common;
 
 
 import java.io.File;
 import java.io.FileOutputStream;
-import java.io.FileWriter;
 import java.io.IOException;
 import java.io.PrintWriter;
+import java.io.StringWriter;
 import java.sql.Connection;
 import java.sql.DriverManager;
 import java.sql.PreparedStatement;
@@ -23,6 +20,9 @@ import org.json.JSONArray;
 import org.json.JSONException;
 import org.json.JSONObject;
 
+/**
+ * class to manage/interact with the database
+ */
 public class HeapHubDatabaseManager {
 
     private static HeapHubDatabaseManager instance;
@@ -32,9 +32,9 @@ public class HeapHubDatabaseManager {
     private final static String user = "sdldnzqbmrafeu";
     private final static String password = "48cb03b95211bd6c372e0c7a7a6cf6b37d09a3436271200d793a47755a86e65e";
 
-	static PrintWriter printWriter;
-	static FileWriter fileWriter;
 	// logger to write to log.txt file
+	static StringWriter sw;
+	static PrintWriter printWriter;
 	static String logFilePath = "/Users/dbarra/git/heaphub/outputs/log.txt";
 	static File logFile = new File(logFilePath);
 	static void log(Object o) {
@@ -47,12 +47,15 @@ public class HeapHubDatabaseManager {
 		}
 	}
 
+    // overload log function to improve logging of exceptions
 	static void log(Exception e) throws IOException {
-		if (fileWriter == null) {
-		fileWriter = new FileWriter(logFile, true);
-		printWriter = new PrintWriter(fileWriter);
+		if (sw == null) {
+			StringWriter sw = new StringWriter();
+			printWriter = new PrintWriter(sw);
 		}
 		e.printStackTrace(printWriter);
+		log(sw.toString());
+		sw.flush();
 	}
 
     private HeapHubDatabaseManager() {
@@ -71,6 +74,11 @@ public class HeapHubDatabaseManager {
         return instance;
     }
 
+	/**
+	 * Executes a select statement and returns the result as a JSONArray
+	 * @param sql
+	 * @return result as a JSONArray
+	 */
     public JSONArray executeSelect(String sql) {
     	
     	JSONArray result = null;
@@ -85,6 +93,11 @@ public class HeapHubDatabaseManager {
     	return result;
     }
 
+	/**
+	 * Executes a sql statement that does not return any result
+	 * @param sql
+	 * @throws IOException
+	 */
 	public void executeUpdate(String sql) throws IOException {
 		try {
 			PreparedStatement preparedStatement = connection.prepareStatement(sql);

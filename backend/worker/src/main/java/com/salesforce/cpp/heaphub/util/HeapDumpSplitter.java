@@ -4,12 +4,12 @@
 package com.salesforce.cpp.heaphub.util;
 
 import java.io.*;
-import java.nio.charset.Charset;
 
 
 /**
  * @author dvayyala
- *
+ * This class is used to split a heap dump into chunks to upload the heap dump in chunks
+ * Unfortunately this strategy is currently unfeasable and so this file is deprecated and unnecessary
  */
 public class HeapDumpSplitter {
 	

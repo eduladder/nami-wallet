@@ -1,6 +1,3 @@
-/**
- * 
- */
 package com.salesforce.cpp.heaphub.route;
 
 import java.io.File;
@@ -16,12 +13,14 @@ import org.eclipse.jifa.worker.route.MappingPrefix;
 
 import io.vertx.core.Vertx;
 import io.vertx.ext.web.client.WebClient;
+
 /**
  * @author dvayyala
- *
+ * a base route for all routes created as part of heaphub extension to JIFA application
  */
 @MappingPrefix("/heaphub/:file")
 public class HeapHubBaseRoute extends BaseRoute{
+    // location of log file to allow for deleting and rebuilding log file whenever route is hit
 	static String logFilePath = "/Users/dbarra/git/heaphub/outputs/log.txt";
 	static File logFile = new File(logFilePath);
 	private static List<Class<? extends HeapHubBaseRoute>> ROUTES = new ArrayList<>();
