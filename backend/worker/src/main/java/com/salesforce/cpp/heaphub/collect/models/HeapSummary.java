@@ -1,5 +1,8 @@
 package com.salesforce.cpp.heaphub.collect.models;
 
+/**
+ * A model to represent heap summary
+ */
 public class HeapSummary {
     String name; 
     String generatedName; 
@@ -16,6 +19,7 @@ public class HeapSummary {
     Long updatedAt;
     String jvmParameters;
 
+    
     public HeapSummary(String name, String generatedName, long usedHeapSize, long classCount, long objectCount, long classLoaderCount, long gcRootCount, int osBit, String pod, String hostName, long heapCreationDate, long createdAt, long updatedAt, String jvmParameters) {
         this.name = name;
         this.generatedName = generatedName;
@@ -37,7 +41,6 @@ public class HeapSummary {
 
     }
 
-    // setters and getters
     public String getName() {
         return name;
     }
@@ -151,12 +154,20 @@ public class HeapSummary {
         return jvmParameters;
     }
 
+    /**
+     * Given the original name of a heap dump, parse the name to get the pod and host name.
+     * @param name
+     */
     public void addHostAndPod(String name) {
         String[] names = name.split("-", 2);
         pod = names[0];
         hostName = names[1].substring(0, names[1].indexOf(".hprof"));
     }
 
+    /**
+     * Constructs the SQL for an insert
+     * @return sql query
+     */
     public String uploadSQLStatement() {
         return String.format("INSERT INTO heap_summary (name, generated_name, used_heap_size, class_count, object_count, class_loader_count, gc_root_count, os_bit, pod, host_name, heap_creation_date, created_at, updated_at, jvm_parameters) VALUES ('%s', '%s', %s, %s, %s, %s, %s, '%s', '%s', '%s', to_timestamp(%s), to_timestamp(%s), to_timestamp(%s), '%s');", 
         this.name, 
@@ -175,6 +186,10 @@ public class HeapSummary {
         this.jvmParameters);
     }
 
+    /**
+     * Constructs the SQL statement to get the heap id for a given heap name
+     * @return sql statement
+     */
     public String getHeapIdSQL() {
         return String.format("SELECT heap_id FROM heap_summary WHERE name = '%s';", this.name);
     }

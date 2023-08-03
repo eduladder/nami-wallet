@@ -4,18 +4,28 @@ import org.eclipse.jifa.worker.Constant;
 
 import io.vertx.core.json.JsonObject;
 
+/**
+ * Model to represent Thread Information
+ */
 public class ThreadInfo {
         private int heapId;
         private long createdAt;
-        private int objectId; // done
-        private String objectLabel; // done object_label
-        private String threadName; // done
-        private long shallowSize; // done
-        private long retainedSize; // done
-        private String contextClassLoader; // done
-        private boolean hasStack; // done
-        private boolean daemon; // done
+        private int objectId;
+        private String objectLabel;
+        private String threadName;
+        private long shallowSize;
+        private long retainedSize;
+        private String contextClassLoader;
+        private boolean hasStack;
+        private boolean daemon;
 
+
+        /**
+         * Constructor to create ThreadInfo object from a JsonObject returned from JIFA backend. Assumes a valid JsonObject
+         * @param obj
+         * @param heapId primary key of heap in SQL database
+          * @param analysisTime time when analysis is being conducted
+         */
         public ThreadInfo(JsonObject obj, int heapId, long analysisTime) {
             this.objectId = obj.getInteger(Constant.Threads.OBJECT_ID_KEY);
             this.objectLabel = obj.getString(Constant.Threads.OBJECT_KEY);
@@ -61,53 +71,29 @@ public class ThreadInfo {
             return createdAt;
         }
 
+
+        /**
+         * Returns the SQL header to batch insert a ThreadInfo object into the database
+         * @return sql header
+         */
         public static String uploadSQLStatement() {
             return "INSERT INTO thread_info (heap_id, object_id, object_label, thread_name, context_class_loader, has_stack, is_daemon, shallow_size, retained_size, created_at, updated_at) VALUES ";
         }
 
-
+         /**
+         * Returns the SQL values to batch insert a ThreadInfo object into the database
+         * @return sql values
+         */
         public String getSQLValues() {
             return String.format("(%s, %s, $HEAPHUB_ESC_TAG$%s$HEAPHUB_ESC_TAG$, $HEAPHUB_ESC_TAG$%s$HEAPHUB_ESC_TAG$, $HEAPHUB_ESC_TAG$%s$HEAPHUB_ESC_TAG$, %s, %s, %s, %s, to_timestamp(%s), to_timestamp(%s))", heapId, this.getObjectId(), this.getObjectLabel(), this.getThreadName(), this.getContextClassLoader(), this.hasStack(), this.isDaemon(), this.getShallowSize(), this.getRetainedSize(), this.getCreatedAt()/1000, this.getCreatedAt()/1000);
         }
 
+         /**
+         * Returns the SQL statement to retrieve  the thread_info_id (primary key) and object_id for ThreadInfo object. The purpose is to help create the ThreadIds datatype
+         * @return sql statement
+         */
         public static String getIds(int heapId) {
             return String.format("SELECT thread_info_id, object_id FROM thread_info WHERE heap_id = %s;", heapId);
-        }
-
-        public String[] getCSVArray() {
-            return new String[] { 
-                    String.valueOf(this.getHeapId()),
-                    String.valueOf(this.getObjectId()),
-                    this.getObjectLabel(),
-                    this.getThreadName(),
-                    this.getContextClassLoader(),
-                    String.valueOf(this.hasStack()),
-                    String.valueOf(this.isDaemon()),
-                    String.valueOf(this.getShallowSize()),
-                    String.valueOf(this.getRetainedSize()),
-                    String.format("to_timestamp(%s)", this.getCreatedAt()/1000),
-                    String.format("to_timestamp(%s)", this.getCreatedAt()/1000)
-            };
-        }
-
-        public static String[] getCSVHeader() {
-            return new String[] {
-                    "heap_id",
-                    "object_id",
-                    "object_label",
-                    "thread_name",
-                    "context_class_loader",
-                    "has_stack",
-                    "is_daemon",
-                    "shallow_size",
-                    "retained_size",
-                    "created_at",
-                    "updated_at"
-            };
-        }
-
-        public static String uploadCSV(String path) {
-            return String.format("COPY thread_info (thread_info (heap_id, object_id, object_label, thread_name, context_class_loader, has_stack, is_daemon, shallow_size, retained_size, created_at, updated_at) FROM '%s' DELIMITERS ',' CSV HEADER;", path);
         }
 
     }

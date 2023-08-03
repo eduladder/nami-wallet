@@ -1,10 +1,12 @@
 package com.salesforce.cpp.heaphub.collect.models;
 
-import org.checkerframework.checker.regex.qual.Regex;
 import org.eclipse.jifa.worker.Constant;
 
 import io.vertx.core.json.JsonObject;
 
+/***
+ * Model to represent Class Histogram Inbound and Outbound Information
+ */
 public class ClassReference {
     private int heapId;
     private int objectId;
@@ -21,6 +23,14 @@ public class ClassReference {
     private long createdAt;
     private int parentId;
 
+    /**
+     * Constructor to create ClassHistoInfo object from a JsonObject returned from JIFA backend. Assumes a valid JsonObject
+     * @param obj
+     * @param heapId generated name of the heap
+     * @param createdAt primary id of heap in SQL database
+     * @param parentId parent of current classReference, -1 if root
+     * @param isInbound true if this is an inbound reference, false if outbound
+     */
     public ClassReference(JsonObject obj, int heapId, long createdAt, int parentId, boolean isInbound) {
             this.objectId = obj.getInteger(Constant.Outbounds.OBJECT_ID_KEY);
             this.prefix = obj.getString(Constant.Outbounds.PREFIX_KEY);
@@ -37,9 +47,8 @@ public class ClassReference {
             this.createdAt = createdAt;
             this.isInbound = isInbound;
     }
-    /*            "objectId": 754,
-            "gCRoot": true */
     
+
     public int getHeapId() {
         return heapId;
     }
@@ -146,13 +155,17 @@ public class ClassReference {
         this.suffix = suffix;
     }
 
+
+    // header for batch insert statement
     public static String uploadSQLStatement() {
         return "INSERT INTO histogram_reference (heap_id, parent_id, object_id, object_label, prefix, suffix, is_inbound, has_inbound, has_outbound, shallow_size, retained_size, object_type, gc_root, created_at, updated_at) VALUES ";
     }
 
+    // values for batch insert statement
     public String getSQLValues() {
         return String.format("(%s, %s, %s, $HEAPHUB_ESC_TAG$%s$HEAPHUB_ESC_TAG$, $HEAPHUB_ESC_TAG$%s$HEAPHUB_ESC_TAG$, $HEAPHUB_ESC_TAG$%s$HEAPHUB_ESC_TAG$, %s, %s, %s, %s, %s, %s, %s, to_timestamp(%s), to_timestamp(%s))", 
                 heapId, parentId, objectId, objectLabel, prefix, suffix, isInbound, hasInbound, hasOutbound, shallowSize, retainedSize, objectType, gCRoot, createdAt/1000, createdAt/1000).replaceAll("[^\u0001-\u007F]+", "");
+                // some values may contain certain HTML characters, which are not allowed in SQL, so replace them with empty string
     }
 
 }

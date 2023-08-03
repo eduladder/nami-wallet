@@ -4,7 +4,9 @@ import org.eclipse.jifa.worker.Constant;
 
 import io.vertx.core.json.JsonObject;
 
-
+/**
+ * Model to represent a thread's stack trace entries and their corresponding locals
+ */
 public class ThreadStackLocal {
     private int threadId;
     private int threadInfoId;
@@ -24,6 +26,14 @@ public class ThreadStackLocal {
     private int heapId;
     private int depth;
 
+    /**
+     * Constructor
+     * @param heapId primary key id of heap in SQL database
+     * @param createdAt time when analysis is being conducted
+     * @param threadId id of the thread for which data is being collected
+     * @param threadInfoId primary key for the thread infomration in sql db
+     * @param depth the depth of the stack frame in the returned stack trace (returned from JIFA backend and used in subsequent JIFA backend calls)
+     */
     public ThreadStackLocal(int heapId, long createdAt, int threadId, int threadInfoId, int depth) {
         this.heapId = heapId;
         this.createdAt = createdAt;
@@ -36,7 +46,6 @@ public class ThreadStackLocal {
         return threadInfoId;
     }
 
-    // setters and getters
     public int getDepth() {
         return depth;
     }
@@ -149,6 +158,11 @@ public class ThreadStackLocal {
                 '}';
     }
 
+
+    /**
+     * Copy the current object
+     * @return a new ThreadStackLocal copy
+     */
     public ThreadStackLocal copy() {
         ThreadStackLocal copy = new ThreadStackLocal(heapId, createdAt, threadId, threadInfoId, depth);
         copy.setStack(stack);
@@ -166,12 +180,22 @@ public class ThreadStackLocal {
         return copy;
     }
 
+    /**
+     * Given a JsonObject returned from stack trace backend api, add its information to the data structure
+     * Assumes valid object
+     * @param obj
+     */
     public void addStackInfo(JsonObject obj) {
             this.stack = obj.getString(Constant.StackFrame.STACK_NAME_KEY);
             this.hasLocal = obj.getBoolean(Constant.StackFrame.HAS_LOCAL_KEY);
             this.firstNonNativeFrame = obj.getBoolean(Constant.StackFrame.FIRST_NON_NATIVE_FRAME_KEY);
     }
 
+   /**
+     * Given a JsonObject returned from locals backend api, add its information to the data structure
+     * Assumes valid object
+     * @param obj
+     */
     public void addLocalsInfo (JsonObject obj) {
         this.objectId = obj.getInteger(Constant.Locals.OBJECT_ID_KEY);
         this.prefix = obj.getString(Constant.Locals.PREFIX_KEY);
@@ -184,10 +208,19 @@ public class ThreadStackLocal {
         this.objectLabel = obj.getString(Constant.Locals.LABEL_KEY);
     }
 
+
+    /**
+     * Get the SQL header to batch insert a new record into the database
+     * @return sql header
+     */
     public static String uploadSQLStatement() {
         return "INSERT INTO thread_stack (heap_id,thread_info_id, stack, has_local, first_non_native_frame, object_id, object_label, prefix, suffix, has_inbound, has_outbound, retained_size, shallow_size, gc_root, created_at, updated_at) VALUES ";
     }
 
+     /**
+     * Get the SQL values to batch insert a new record into the database
+     * @return sql values
+     */
     public String getSQLValues() {
         return String.format("(%s, %s, $HEAPHUB_ESC_TAG$%s$HEAPHUB_ESC_TAG$, %s, %s, %s, $HEAPHUB_ESC_TAG$%s$HEAPHUB_ESC_TAG$, $HEAPHUB_ESC_TAG$%s$HEAPHUB_ESC_TAG$, $HEAPHUB_ESC_TAG$%s$HEAPHUB_ESC_TAG$, %s, %s, %s, %s, %s, to_timestamp(%s), to_timestamp(%s))", heapId, this.getThreadInfoId(), this.getStack(), this.hasLocal(), this.isFirstNonNativeFrame(), this.getObjectId(), this.getObjectLabel(), this.getPrefix(), this.getSuffix(), this.hasInbound(), this.hasOutbound(), this.getRetainedSize(), this.getShallowSize(), this.isGCRoot(), this.createdAt/1000, this.createdAt/1000).replaceAll("null", "NULL");
     }
@@ -213,29 +246,4 @@ public class ThreadStackLocal {
         };
     }
 
-    public static String[] getCSVHeader() {
-        return new String[]{
-                "heap_id",
-                "thread_info_id",
-                "stack",
-                "has_local",
-                "first_non_native_frame",
-                "object_id",
-                "object_label",
-                "prefix",
-                "suffix",
-                "has_inbound",
-                "has_outbound",
-                "retained_size",
-                "shallow_size",
-                "gc_root",
-                "created_at",
-                "updated_at"
-        };
-    }
-
-    public static String uploadCSV(String path) {
-        return String.format("COPY thread_stack (heap_id,thread_info_id, stack, has_local, first_non_native_frame, object_id, object_label, prefix, suffix, has_inbound, has_outbound, retained_size, shallow_size, gc_root, created_at, updated_at) FROM '%s' DELIMITER ',' CSV HEADER", path);
-    }
-    
 }

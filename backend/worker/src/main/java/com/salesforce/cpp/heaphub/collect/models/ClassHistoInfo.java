@@ -4,6 +4,9 @@ import org.eclipse.jifa.worker.Constant;
 
 import io.vertx.core.json.JsonObject;
 
+/**
+ * Model to represent Class Histogram Information
+ */
 public class ClassHistoInfo {
         private int heapId;
         private Long createdAt;
@@ -14,14 +17,19 @@ public class ClassHistoInfo {
         private int objectId;
         private int type;
 
-
+        /**
+         * Constructor to create ClassHistoInfo object from a JsonObject returned from JIFA backend. Assumes a valid JsonObject
+         * @param obj
+         * @param heapId primary key of heap in SQL database
+         * @param analysisTime time taken to generate the histogram
+         */
         public ClassHistoInfo(JsonObject obj, int heapId, long analysisTime) {
             String label = obj.getString(Constant.Histogram.LABEL_KEY);
             this.label = label;
             this.numberOfObjects = obj.getLong(Constant.Histogram.NUM_OBJECTS_KEY);
             this.shallowSize = obj.getLong(Constant.Histogram.SHALLOW_SIZE_KEY);
             // for some reason backend returns negative number
-            // fixing in backend affects frontend for some reason
+            // fixing in backend might affect frontend, so for now just negate retained size
             this.retainedSize = -obj.getLong(Constant.Histogram.RETAINED_SIZE_KEY);
             this.objectId = obj.getInteger(Constant.Histogram.OBJECT_ID_KEY);
             this.type = obj.getInteger(Constant.Histogram.TYPE_KEY);
@@ -61,45 +69,15 @@ public class ClassHistoInfo {
                     heapId, objectId, label, numberOfObjects, type, shallowSize, retainedSize, createdAt);
         }
 
+        // header for batch insert statement
         public static String uploadSQLStatement() {
             return new String("INSERT INTO histogram (heap_id, object_id, object_label, number_of_objects, object_type, shallow_size, retained_size, created_at, updated_at) VALUES ");
         }
 
+        // values for batch insert statement
         public String getSQLValues() {
             return String.format("(%s, %s,$HEAPHUB_ESC_TAG$%s$HEAPHUB_ESC_TAG$, %s, %s, %s, %s, to_timestamp(%s), to_timestamp(%s))", 
                     heapId, objectId, label, numberOfObjects, type, shallowSize, retainedSize, createdAt/1000, createdAt/1000);
-        }
-
-        static public String[] getCSVHeader() {
-            return new String[] {
-                    "heap_id",
-                    "object_id",
-                    "object_label",
-                    "number_of_objects",
-                    "object_type",
-                    "shallow_size",
-                    "retained_size",
-                    "created_at",
-                    "updated_at"
-            };
-        }
-
-        static public String uploadCSV(String path) {
-            return String.format("COPY histogram (heap_id, object_id, object_label, number_of_objects, object_type, shallow_size, retained_size, created_at, updated_at) FROM '%s' DELIMITER ',' CSV HEADER", path);
-        }
-
-        public String[] getCSVArray() {
-            return new String[] {
-                    String.valueOf(heapId),
-                    String.valueOf(objectId),
-                    label,
-                    String.valueOf(numberOfObjects),
-                    String.valueOf(type),
-                    String.valueOf(shallowSize),
-                    String.valueOf(retainedSize),
-                    String.format("to_timestamp(%s)", createdAt/1000),
-                    String.format("to_timestamp(%s)", createdAt/1000),
-            };
         }
 
 }

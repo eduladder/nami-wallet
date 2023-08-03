@@ -3,6 +3,10 @@ package com.salesforce.cpp.heaphub.collect.models;
 import io.vertx.core.json.JsonObject;
 import org.eclipse.jifa.worker.Constant;
 
+
+/**
+ * Model to represent Outbound information for Dominator Tree
+ */
 public class Outbounds {
         private int objectId;
         private String prefix;
@@ -18,6 +22,13 @@ public class Outbounds {
         private int heapId;
         private long createdAt;
 
+        /**
+         * Constructor to create Outbounds object from a JsonObject returned from JIFA backend. Assumes a valid JsonObject
+         * @param obj
+         * @param sourceId root for which the oubound is being generated
+         * @param heapId primay key of heap in SQL database
+         * @param analysisTime time when analysis is being conducted
+         */
         public Outbounds(JsonObject obj, int sourceId, int heapId, long analysisTime) {
             this.objectId = obj.getInteger(Constant.Outbounds.OBJECT_ID_KEY);
             this.prefix = obj.getString(Constant.Outbounds.PREFIX_KEY);
@@ -74,58 +85,21 @@ public class Outbounds {
         public long getCreatedAt() {
             return createdAt;
         }
-        public String toCSV() {
-            return String.format("%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s\n", objectId, prefix, label, suffix, shallowSize, retainedSize, hasInbound, hasOutbound, objectType, gCRoot, sourceId, heapId, createdAt);
-        }
 
+        /***
+         * Get the SQL header to batch insert a new Outbound into the database
+         * @return sql header
+         */
         public static String uploadSQLStatement() {
             return "INSERT INTO outbounds (heap_id,source_id, object_id, prefix, label, suffix, shallow_size, retained_size, has_inbound, has_outbound, object_type, gc_root, created_at, updated_at) VALUES ";
         }
 
+        /**
+         * Get the SQL values to batch insert a new Outbound into the database
+         * @return sql values string
+         */
         public String getSQLValues() {
             return String.format("(%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,to_timestamp(%s),to_timestamp(%s))", heapId, sourceId, objectId, prefix, label, suffix, shallowSize, retainedSize, hasInbound, hasOutbound, objectType, gCRoot, createdAt/1000, createdAt/1000);
-        }
-
-        public String[] getCSVArray() {
-            return new String[] {
-                    String.valueOf(heapId),
-                    String.valueOf(sourceId),
-                    String.valueOf(objectId),
-                    prefix,
-                    label,
-                    suffix,
-                    String.valueOf(shallowSize),
-                    String.valueOf(retainedSize),
-                    String.valueOf(hasInbound),
-                    String.valueOf(hasOutbound),
-                    String.valueOf(objectType),
-                    String.valueOf(gCRoot),
-                    String.format("to_timestamp(%s)", createdAt/1000),
-                    String.format("to_timestamp(%s)", createdAt/1000),
-            };
-        }
-
-        public static String[] getCSVHeader () {
-            return new String[] {
-                "heap_id",
-                "source_id",
-                "object_id",
-                "prefix",
-                "label",
-                "suffix",
-                "shallow_size",
-                "retained_size",
-                "has_inbound",
-                "has_outbound",
-                "object_type",
-                "gc_root",
-                "created_at",
-                "updated_at",
-            };
-        }
-
-        public static String uploadCSV(String path) {
-            return String.format("COPY outbounds (heap_id,source_id, object_id, prefix, label, suffix, shallow_size, retained_size, has_inbound, has_outbound, object_type, gc_root, created_at, updated_at) FROM '%s' DELIMITERS ',' CSV HEADER;", path);
         }
 
     }

@@ -5,8 +5,8 @@ import org.eclipse.jifa.worker.Constant;
 import io.vertx.core.json.JsonObject;
 
 public class DomTreeObject {
-        private int parentId; // done
-        private String memLocation; // done
+        private int parentId;
+        private String memLocation;
         private long createdAt;
         private int heapId;
         private boolean isDomRoot;
@@ -18,13 +18,16 @@ public class DomTreeObject {
         private long shallowSize;
         private long retainedSize;
         private double percent;
+        // the following are not returned from the backend, but may be added later so are included here for now
         private Boolean hasInbound;
         private Boolean hasOutbound;
         private String prefix;
-        // has inbound and has outbound are not present in returned json
-        // prefix does not exist
-        // private double percent; // not included in the stored information
 
+
+        /**
+          * Constructor to create DomTreeObject object from a JsonObject returned from JIFA backend. Assumes a valid JsonObject
+           * @param obj
+          */
         DomTreeObject(JsonObject obj) {
             gCRoot = (obj.getBoolean(Constant.DomTree.GC_ROOT_KEY));
             label = (obj.getString(Constant.DomTree.LABEL_KEY));
@@ -111,67 +114,27 @@ public class DomTreeObject {
             return suffix;
         }
 
-        public String toCSV() {
-            return String.format("%s,%s,%s,%s,%s,%s,%s,%s,%s,%s, %s,%s,%s\n",
-            this.getLabel(), this.getMemLocation(), this.getObjectId(), this.getObjectType(), this.getParentId(), this.getPercent(), this.getRetainedSize(), this.getShallowSize(), this.getSuffix(), this.isGCRoot(), this.createdAt, this.heapId, this.isDomRoot);
+
+        public String getPrefix() {
+            return prefix;
         }
 
-        // percent is not included - add it 
+        public boolean hasInbound() {
+            return hasInbound;
+        }
+        
+        public boolean hasOutbound() {
+            return hasOutbound;
+        }
+
+        // header for batch insert
         public static String uploadSQLStatement() {
-            return "INSERT INTO dominator_tree (heap_id, object_id, parent_id, object_label, memory_location, origin, suffix, shallow_size, retained_size, object_type, gc_root, created_at, updated_at, prefix, has_inbound, has_outbound) VALUES ";
+            return "INSERT INTO dominator_tree (heap_id, object_id, parent_id, object_label, memory_location, origin, suffix, shallow_size, retained_size, object_type, percent, gc_root, created_at, updated_at, prefix, has_inbound, has_outbound) VALUES ";
         }
 
+        // values for batch insert
         public String getSQLValues() {
-            return ("(" + heapId + ", " + this.getObjectId() + ", " + parentId + ", $TAG_24121$" + this.getLabel() + "$TAG_24121$, $TAG_24121$" + this.getMemLocation() + "$TAG_24121$, " + this.isDomRoot + ", $TAG_24121$" + this.getSuffix() + "$TAG_24121$, " + this.getShallowSize() + ", " + this.getRetainedSize() + ", " + this.getObjectType() + ", " + this.isGCRoot() + ", to_timestamp(" + this.getCreatedAt()/1000 + "), to_timestamp(" + this.getCreatedAt()/1000 + "), NULL, NULL, NULL)");
-        }
-
-        public String[] getCSVArray() {
-            return new String[] {
-                String.valueOf(heapId),
-                String.valueOf(this.getObjectId()),
-                String.valueOf(parentId),
-                this.getLabel(),
-                this.getMemLocation(),
-                String.valueOf(this.isDomRoot),
-                String.valueOf(this.getSuffix()),
-                String.valueOf(this.getShallowSize()),
-                String.valueOf(this.getRetainedSize()),
-                String.valueOf(this.getObjectType()),
-                String.valueOf(this.getObjectId()),
-                String.valueOf(this.isGCRoot()),
-                String.format( "to_timestamp(%d)", this.getCreatedAt()/1000),
-                String.format( "to_timestamp(%d)", this.getCreatedAt()/1000),
-                "NULL",
-                "NULL",
-                "NULL",
-                String.valueOf(this.getPercent())
-            };
-        }
-
-        static public String[] getCSVHeader() {
-            return new String[] {
-                "heap_id",
-                "object_id",
-                "parent_id",
-                "object_label",
-                "memory_location",
-                "origin",
-                "suffix",
-                "shallow_size",
-                "retained_size",
-                "object_type",
-                "gc_root",
-                "created_at",
-                "updated_at",
-                "prefix",
-                "has_inbound",
-                "has_outbound",
-                "percent"
-            };
-        }
-
-        static public String uploadCSV(String path) {
-            return String.format("COPY dominator_tree (heap_id, object_id, parent_id, object_label, memory_location, origin, suffix, shallow_size, retained_size, object_type, gc_root, created_at, updated_at, prefix, has_inbound, has_outbound, percent) FROM '%s' DELIMITER ',' CSV HEADER", path);
+            return ("(" + heapId + ", " + this.getObjectId() + ", " + parentId + ", $TAG_24121$" + this.getLabel() + "$TAG_24121$, $TAG_24121$" + this.getMemLocation() + "$TAG_24121$, " + this.isDomRoot + ", $TAG_24121$" + this.getSuffix() + "$TAG_24121$, " + this.getShallowSize() + ", " + this.getRetainedSize() + ", " + this.getObjectType() + ", " + this.getPercent() + ", " + this.isGCRoot() + ", to_timestamp(" + this.getCreatedAt()/1000 + "), to_timestamp(" + this.getCreatedAt()/1000 + "), NULL, NULL, NULL)");
         }
 
 }

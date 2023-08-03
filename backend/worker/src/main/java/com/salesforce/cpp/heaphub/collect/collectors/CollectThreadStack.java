@@ -91,6 +91,7 @@ public class CollectThreadStack extends CollectBase {
             ArrayList<ThreadStackLocal> arr = new ArrayList<ThreadStackLocal>(32);
             for (int i = 0; i < jsonArray.size(); i++) {
                 JsonObject curr = jsonArray.getJsonObject(i);
+                // the depth is just the index of the  stack frame in the returned stack trace + 1 
                 ThreadStackLocal stack = new ThreadStackLocal(heapId, createdAt, threadId.thread_id, threadId.thread_info_id, i+1);
                 stack.addStackInfo(curr);
                 arr.add(stack);
@@ -114,6 +115,7 @@ public class CollectThreadStack extends CollectBase {
         URI uri = new URIBuilder(Constant.API.HEAP_DUMP_API_PREFIX + "/" + heapName + "/locals")
 		.addParameter("objectId", String.valueOf(stack.getThreadId()))
         .addParameter("firstNonNativeFrame", String.valueOf(stack.isFirstNonNativeFrame()))
+        // depth is just the index of the stack frame in the returned stack trace (when the api call is made to collect the stack trace for this thread) + 1 
         .addParameter("depth", String.valueOf(stack.getDepth()))
 		.build();
 		HttpGet getLocals = new HttpGet(uri);

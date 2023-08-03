@@ -4,6 +4,9 @@ import java.util.List;
 
 import io.vertx.core.json.JsonObject;
 
+/***
+ * Model to represent patch to garbage collection root
+ */
 public class GCRootPath {
             
     static public class PathToGCRootElement {
@@ -24,7 +27,14 @@ public class GCRootPath {
         private int sourceId;
         private int heapId;
 
-
+        /**
+         * Constructor to create GCRootPath object from a JsonObject returned from JIFA backend. Assumes a valid JsonObject
+         * @param obj 
+         * @param parentId parent of current GC Root element, -1 if root
+         * @param sourceId id of element that we are trying to find the path to GC root for
+         * @param heapId primary key of heap in SQL database
+         * @param analysisTime time when analysis is being conducted
+         */
         public PathToGCRootElement(JsonObject obj, int parentId, int sourceId, int heapId, long analysisTime) {
             if (obj.getString("suffix") == null) {
                 suffix = "";
@@ -131,73 +141,32 @@ public class GCRootPath {
             return sourceId;
         }
 
-        public String toCSV() {
-            return String.format("%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s\n",
-                    parentId, objectId, label, memoryLocation, origin, suffix, prefix, hasInbound, hasOutbound, gCRoot, shallowSize, retainedSize, objectType, heapId, createdAt, sourceId);
-        }
-
+        /**
+         * Constructs the SQL header for a batch insert
+         * @return string of header for batch insert
+         */
         public static String uploadSQLStatement() {
             return "INSERT INTO path_to_gc_root (heap_id, source_id, parent_id, object_id, label, memory_location, origin, suffix, prefix, has_inbound, has_outbound, gc_root, shallow_size, retained_size, object_type, created_at, updated_at) VALUES ";
         }
 
+        /**
+         * Constructs the SQL values for a batch insert
+         * @return sql values for batch instert as string
+         */
         public String getSQLValues() {
             return String.format("(%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, to_timestamp(%s), to_timestamp(%s))",
             heapId, sourceId, parentId, objectId, label, memoryLocation, origin, suffix, prefix, hasInbound, hasOutbound, gCRoot, shallowSize, retainedSize, objectType, createdAt/1000, createdAt/1000);
         }
-
-        public String[] getCSVArray() {
-            return new String[] {
-                String.valueOf(heapId),
-                String.valueOf(sourceId),
-                String.valueOf(parentId),
-                String.valueOf(objectId),
-                label,
-                memoryLocation,
-                String.valueOf(origin),
-                suffix,
-                prefix,
-                String.valueOf(hasInbound),
-                String.valueOf(hasOutbound),
-                String.valueOf(gCRoot),
-                String.valueOf(shallowSize),
-                String.valueOf(retainedSize),
-                String.valueOf(objectType),
-                String.format("to_timestamp(%s)", createdAt/1000),
-                String.format("to_timestamp(%s)", createdAt/1000),
-            };
-        }
-
-        public static String[] getCSVHeader() {
-            return new String[] {
-                "heap_id",
-                "source_id",
-                "parent_id",
-                "object_id",
-                "label",
-                "memory_location",
-                "origin",
-                "suffix",
-                "prefix",
-                "has_inbound",
-                "has_outbound",
-                "gc_root",
-                "shallow_size",
-                "retained_size",
-                "object_type",
-                "created_at",
-                "updated_at",
-            };
-        }
-
-        public static String uploadCSV(String path) {
-            return String.format("COPY path_to_gc_root (heap_id, source_id, parent_id, object_id, label, memory_location, origin, suffix, prefix, has_inbound, has_outbound, gc_root, shallow_size, retained_size, object_type, created_at, updated_at) FROM '%s' DELIMITER ',' CSV HEADER", path);
-        }
-
     }
 
     private List<PathToGCRootElement> path;
     private boolean hasMore;
 
+    /**
+     * Constructor to create GCRootPath object a list of PathToGCRootElement.
+     * @param path - list of PathToGCRootElement
+     * @param hasMore - whether or not this path has more elements in it
+     */
     public GCRootPath(List<PathToGCRootElement> path, boolean hasMore) {
         this.path = path;
         this.hasMore = hasMore;
