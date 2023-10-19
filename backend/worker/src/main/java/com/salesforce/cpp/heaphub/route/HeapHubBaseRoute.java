@@ -18,7 +18,7 @@ import io.vertx.ext.web.client.WebClient;
  * @author dvayyala
  * a base route for all routes created as part of heaphub extension to JIFA application
  */
-@MappingPrefix("/heaphub/:file")
+@MappingPrefix("/heaphub")
 public class HeapHubBaseRoute extends BaseRoute{
     // location of log file to allow for deleting and rebuilding log file whenever route is hit
 	static String logFilePath = "/Users/dbarra/git/heaphub/outputs/log.txt";
