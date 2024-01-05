@@ -19,23 +19,33 @@ import java.util.stream.IntStream;
 import org.json.JSONArray;
 import org.json.JSONException;
 import org.json.JSONObject;
+//import liquibase.Liquibase;
+//import liquibase.database.Database;
+//import liquibase.database.DatabaseFactory;
+//import liquibase.database.jvm.JdbcConnection;
+//import liquibase.exception.DatabaseException;
+//import liquibase.resource.ClassLoaderResourceAccessor;
 
+import java.sql.Connection;
+import java.sql.DriverManager;
 /**
  * class to manage/interact with the database
  */
 public class HeapHubDatabaseManager {
 
+	public static final String CHANGELOG_FILE = "liquibasemaster.xml";
+	
     private static HeapHubDatabaseManager instance;
     private Connection connection;
     
-    private final static String url = "jdbc:postgresql://ec2-34-235-198-25.compute-1.amazonaws.com:5432/d16lt7hto5cdcb?currentSchema=heaphub";
-    private final static String user = "sdldnzqbmrafeu";
-    private final static String password = "48cb03b95211bd6c372e0c7a7a6cf6b37d09a3436271200d793a47755a86e65e";
+    private final static String url = "jdbc:postgresql://localhost:8102/heaphub";
+    private final static String user = "postgres";
+    private final static String password = "letmein";
 
 	// logger to write to log.txt file
 	static StringWriter sw;
 	static PrintWriter printWriter;
-	static String logFilePath = "/Users/dbarra/git/heaphub/outputs/log.txt";
+	static String logFilePath = "/Users/p.surve/git/heaphub/outputs/log.txt";
 	static File logFile = new File(logFilePath);
 	static void log(Object o) {
 		try {
@@ -61,6 +71,9 @@ public class HeapHubDatabaseManager {
     private HeapHubDatabaseManager() {
     	try {
     			connection = DriverManager.getConnection(url, user, password);
+    			//Liquibase liquibase = getLiquibase(connection);
+    	        //liquibase.update("");
+
             } catch (SQLException e) {
             	e.printStackTrace();;
             }
@@ -73,6 +86,10 @@ public class HeapHubDatabaseManager {
         }
         return instance;
     }
+   // private static Liquibase getLiquibase() throws DatabaseException {
+   //     return new Liquibase(CHANGELOG_FILE, new ClassLoaderResourceAccessor(), getInstance());
+   // }
+
 
 	/**
 	 * Executes a select statement and returns the result as a JSONArray
